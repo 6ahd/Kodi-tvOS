@@ -28,12 +28,15 @@ with tempfile.TemporaryDirectory() as tmp:
     sys.modules['xbmcgui'] = types.SimpleNamespace(Window=Window)
     sys.modules['xbmc'] = types.SimpleNamespace(log=lambda *a: None, LOGINFO=1, LOGWARNING=2, LOGDEBUG=0)
     tp = importlib.import_module('idle_fixture.trailer_preferences')
+    tp.publish_presentation('background')
+    tp.publish_status('waiting')
+    initial = len(made)
     for _ in range(200):
         tp.publish_presentation('background')
         tp.publish_status('waiting')
-    assert len(made) <= 2, 'Addon() built %d times for 400 publishes' % len(made)
+    assert len(made) == initial <= 3, 'Addon() built %d times for 400 publishes' % len(made)
     assert props['dhs.trailer.enabled'] == '1' and props['dhs.trailer.notice'].startswith('Select')
     settings['homeui_trailers'] = 'false'
     tp.invalidate(); tp.publish_presentation()
     assert props['dhs.trailer.enabled'] == '0', 'invalidate() must apply a changed setting at once'
-print('PASS: 400 trailer publishes reuse cached settings (%d Addon builds); invalidate applies changes at once' % len(made))
+print('PASS: 400 trailer publishes reuse cached settings (%d Addon builds); invalidate applies changes at once' % initial)

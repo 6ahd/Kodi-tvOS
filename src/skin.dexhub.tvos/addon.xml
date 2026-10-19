@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="skin.dexhub.tvos" version="3.28.76" name="Dex Hub Skin (Apple TV)" provider-name="DexWorld">
+<addon id="skin.dexhub.tvos" version="3.28.79" name="Dex Hub Skin (Apple TV)" provider-name="DexWorld">
     <requires>
         <import addon="xbmc.gui" version="5.17.0" />
         <import addon="plugin.video.dexhub.tvos" version="5.10.160" optional="true" />
@@ -24,7 +24,7 @@
         <disclaimer lang="en_GB">Based on Estuary (Team Kodi). The video player, settings pages and dialogs are Arctic Fuse 3's by jurialmunkey (CC BY-NC-SA 4.0), from ABUKARIM's modified copy. Fonts: Inter with IBM Plex Sans Arabic, League Spartan, Font Awesome 6 Free (SIL Open Font License); the Arabic font sets come from that copy under their own terms.</disclaimer>
         <license>CC BY-SA 4.0 (Estuary), CC BY-NC-SA 4.0 (Arctic Fuse 3 player), GNU GENERAL PUBLIC LICENSE Version 2.0</license>
         <forum>https://dexworld.cc</forum>
-        <news>Smaller Play, More info and Trailer pills on the Home, the island's tabs wrap around, and the title page's icon buttons end with More (Read synopsis, Change artwork). Apple TV player dependencies are retained.</news>
+        <news>The Home backdrop follows the cursor once it rests (lighter scrolling), a clean trailer hides the logo, genres and ratings, and the island shows the week you watched, the season's episodes and NEW EP or TONIGHT. Needs Dex Hub 5.10.334. Apple TV player dependencies are retained.</news>
         <assets>
             <icon>resources/icon.png</icon>
             <fanart>resources/fanart.jpg</fanart>

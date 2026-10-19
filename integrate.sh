@@ -13,7 +13,15 @@ CONFIG="${DEX_CONFIG:-Release}"
 case "$CONFIG" in Release|Debug) ;; *) echo "DEX_CONFIG must be Release or Debug"; exit 1 ;; esac
 FRAMEWORK="$WORK/aether-bridge-build/Products/Release-appletvos/DexAetherBridge.framework"
 test -s "$FRAMEWORK/DexAetherBridge"
-"$PYTHON" -c 'import plistlib,sys; p=plistlib.load(open(sys.argv[1],"rb")); sys.exit(0 if str(p.get("DexHubBridgeAPI")) == "2" and p.get("DexHubBridgeRevision") == 20 and p.get("DexHubAetherVersion") == "7.38.1" else "Old Swift bridge: run all.sh before packaging.")' "$FRAMEWORK/Info.plist"
+"$PYTHON" - "$FRAMEWORK/Info.plist" "$BASE/ENGINE-RELEASE.json" <<'PY'
+import json, plistlib, sys
+from pathlib import Path
+p = plistlib.loads(Path(sys.argv[1]).read_bytes())
+r = json.loads(Path(sys.argv[2]).read_text())
+if not (p.get('DexHubBridgeAPI') == 2 and p.get('DexHubBridgeRevision') == r['bridge_revision']
+        and p.get('DexHubAetherVersion') == r['version'] and p.get('DexHubAetherCommit') == r['commit']):
+    raise SystemExit('Old Swift bridge: run all.sh before packaging.')
+PY
 MINIMUM="$(cat "$WORK/aether-bridge-build/deployment.txt")"
 echo "Experimental IPA will require tvOS $MINIMUM or newer."
 KODI_SRC="${KODI_SRC:-$WORK/kodi-rc1-source}"
@@ -83,12 +91,12 @@ xcrun swift-stdlib-tool --copy --platform appletvos \
   --scan-folder "$APP/Frameworks" --destination "$APP/Frameworks"
 bash "$BASE/normalize_frameworks.sh" "$APP"
 
-OUT="$HOME/Downloads/Kodi-DexHub-AetherOnly-v21.38-TEST-unsigned-$(date +%Y%m%d-%H%M%S).ipa"
+OUT="${DEX_OUTPUT_DIR:-$HOME/Downloads}/Kodi-DexHub-AetherOnly-v21.42-TEST-unsigned-$(date +%Y%m%d-%H%M%S).ipa"
 ditto -c -k --keepParent "$STAGE/Payload" "$OUT"
 unzip -t "$OUT" >/dev/null
 for ASSET in "$BASE"/assets/*.zip; do
-  ditto "$ASSET" "$HOME/Downloads/$(basename "$ASSET")"
+  ditto "$ASSET" "${DEX_OUTPUT_DIR:-$HOME/Downloads}/$(basename "$ASSET")"
 done
 echo "$OUT"
 echo "Sign the entire IPA, including embedded frameworks, before installing."
-open -R "$OUT"
+if [ "${DEX_SHOW_OUTPUT:-1}" = 1 ]; then open -R "$OUT"; fi

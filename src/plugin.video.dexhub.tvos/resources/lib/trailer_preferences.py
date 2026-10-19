@@ -21,51 +21,66 @@ def display_mode(value=None):
     return value if value in MODES else 'background'
 
 
-_MEMO = {'at': 0.0, 'scope': None, 'values': None}
-_MEMO_TTL = 30.0
+# v5.10.334: the skin's trailer thread published these five properties four
+# times a second, each time building a Window and three Addon objects (every
+# one a wait on Kodi's graphics lock, so a pause in the frame while the remote
+# moves the cursor). A value is written now when it changes (and again after
+# half a minute, in case something else cleared it), the settings are read
+# again after two seconds, and one Window serves every call.
+_WRITTEN = {}
+_HOME = []
+_READ = {'t': -1e9}
+
+
+def _home():
+    import xbmcgui
+    if not _HOME:
+        _HOME.append(xbmcgui.Window(10000))
+    return _HOME[0]
+
+
+def _put(key, value):
+    import time
+    now = time.monotonic()
+    last = _WRITTEN.get(key)
+    if last is not None and last[0] == value and now - last[1] < 30.0:
+        return
+    _WRITTEN[key] = (value, now)
+    _home().setProperty(key, value)
+
+
+def _settings():
+    import time
+    now = time.monotonic()
+    if now - _READ['t'] > 2.0:
+        import xbmcaddon
+        addon = xbmcaddon.Addon('plugin.video.dexhub.tvos')
+        _READ.update(t=now, mode=addon.getSetting('homeui_trailer_mode'),
+                     on=addon.getSetting('homeui_trailers'), lang=addon.getSetting('ui_language').lower())
+    return _READ
 
 
 def invalidate():
-    """v5.10.289: forget the remembered trailer values (a setting changed)."""
-    _MEMO['values'] = None
-
-
-def _values(scope):
-    """v5.10.289: the trailer watcher publishes these on every tick (4 a second
-    while the remote is in use); read them from Kodi at most every 30 s."""
-    import time
-    now = time.monotonic()
-    if _MEMO['values'] is None or _MEMO['scope'] != scope or now - _MEMO['at'] > _MEMO_TTL:
-        import xbmcaddon
-        addon = xbmcaddon.Addon('plugin.video.dexhub.tvos')
-        _MEMO.update(at=now, scope=scope, values={
-            'mode': addon.getSetting('homeui_trailer_mode'),
-            'trailers': addon.getSetting('homeui_trailers'),
-            'lang': (addon.getSetting('ui_language') or '').lower()})
-    return _MEMO['values']
+    """Read the settings again at the next publish (a setting changed)."""
+    _READ['t'] = -1e9
 
 
 def publish_presentation(mode=None):
     """Publish layout without starting/importing the video service or resolver."""
-    import xbmcgui
     from . import profile_scope
     if not profile_scope.is_current():
         return
-    scope = profile_scope.key()
-    values = _values(scope)
-    home = xbmcgui.Window(10000)
-    mode = display_mode(values.get('mode'))
-    enabled = '0' if values['trailers'] == 'false' else '1'
-    for key, value in (('dhs.trailer.mode', mode), ('dhs.trailer.enabled', enabled),
-                       ('dhs.trailer.config.scope', scope)):
-        if home.getProperty(key) != value:
-            home.setProperty(key, value)
+    if mode is None:
+        _READ['t'] = -1e9               # a direct call (a setting changed) reads them again
+    found = _settings()
+    mode = display_mode(found['mode'])
+    _put('dhs.trailer.mode', mode)
+    _put('dhs.trailer.enabled', '0' if found['on'] == 'false' else '1')
+    _put('dhs.trailer.config.scope', profile_scope.key())
     return mode
 
 
 def publish_status(state):
-    import xbmcaddon
-    import xbmcgui
     from . import profile_scope
     if not profile_scope.is_current():
         return
@@ -77,13 +92,9 @@ def publish_status(state):
         'error': ('تعذر بدء خدمة التريلر — أعد تشغيل Kodi', 'Trailer service could not start — restart Kodi'),
         'playing': ('', ''),
     }
-    lang = _values(profile_scope.key())['lang']
-    home = xbmcgui.Window(10000)
-    notice = labels.get(state, labels['waiting'])[1 if lang == 'english' else 0]
-    if home.getProperty('dhs.trailer.status') != state:
-        home.setProperty('dhs.trailer.status', state)
-    if home.getProperty('dhs.trailer.notice') != notice:
-        home.setProperty('dhs.trailer.notice', notice)
+    lang = _settings()['lang']
+    _put('dhs.trailer.status', state)
+    _put('dhs.trailer.notice', labels.get(state, labels['waiting'])[1 if lang == 'english' else 0])
 
 
 def write_setting(key, value):
@@ -99,7 +110,6 @@ def write_setting(key, value):
     saved = xbmcaddon.Addon('plugin.video.dexhub.tvos').getSetting(key)
     if saved != value:
         raise RuntimeError('Trailer setting was not saved; update the add-on and restart Kodi')
-    invalidate()
     if key in ('homeui_trailer_mode', 'homeui_trailers'):
         publish_presentation()
     if key == 'homeui_trailer_mode':

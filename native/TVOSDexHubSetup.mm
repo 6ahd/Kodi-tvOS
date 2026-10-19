@@ -232,6 +232,21 @@ void ActivateDexHubBundle(ADDON::CAddonMgr& manager)
         CLog::Log(LOGERROR, "DexHub setup: {} could not be enabled", id);
       }
     }
+    ADDON::AddonPtr repository;
+    const std::string repositoryId = "repository.dexworld.appletv";
+    if (manager.GetAddon(repositoryId, repository, ADDON::OnlyEnabled::CHOICE_YES))
+    {
+      for (const std::string id : {"plugin.video.dexhub.tvos", "skin.dexhub.tvos",
+                                   "script.dexhub.tvos.players"})
+      {
+        ADDON::AddonPtr addon;
+        if (!manager.GetAddon(id, addon, ADDON::OnlyEnabled::CHOICE_NO))
+          continue;
+        const std::string origin = addon->Origin();
+        if (origin.empty() || origin == "repository.dexhub" || origin == ADDON::ORIGIN_SYSTEM)
+          manager.SetAddonOrigin(id, repositoryId, false);
+      }
+    }
     bundleReady = success;
   }
 }

@@ -1,0 +1,14 @@
+{
+  "skin.dexhub.tvos-3.28.79.zip": {
+    "source": "https://dexworld.cc/appletv/skin.dexhub.tvos/skin.dexhub.tvos-3.28.79.zip",
+    "sha256": "127c41fce3160e109ee5fd7ddca76fecf3c8302745a9564c20ed0ed84179b112"
+  },
+  "plugin.video.dexhub.tvos-5.10.342.zip": {
+    "source": "https://dexworld.cc/appletv/plugin.video.dexhub.tvos/plugin.video.dexhub.tvos-5.10.342.zip",
+    "sha256": "008dacdc1f1ea4c961f1ac3a585bfa6da4266e04f7eab60bad91435bc0629e3b"
+  },
+  "repository.dexworld.appletv-1.0.2.zip": {
+    "source": "https://dexworld.cc/appletv/repository.dexworld.appletv/repository.dexworld.appletv-1.0.2.zip",
+    "sha256": "76527c11d55c7f187b1ea31a2c2c6b86ae3567fb8b3b53605d20c80ec2583bc1"
+  }
+}

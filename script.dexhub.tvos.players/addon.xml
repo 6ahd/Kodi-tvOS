@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="script.dexhub.tvos.players" version="1.0.14" name="DexHub Apple TV Players" provider-name="DexWorld">
+<addon id="script.dexhub.tvos.players" version="1.0.15" name="DexHub Apple TV Players" provider-name="DexWorld">
 <requires><import addon="xbmc.python" version="3.0.0"/><import addon="plugin.video.dexhub.tvos" version="5.10.273"/></requires>
 <extension point="xbmc.python.script" library="default.py"/>
 <extension point="xbmc.service" library="service.py"/>

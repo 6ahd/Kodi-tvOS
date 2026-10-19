@@ -9049,6 +9049,10 @@ def silo_menu():
              art=collection_banner_art('Collections', fanart=addon_fanart()),
              info={'title': 'كوليكشناتي', 'plot': 'الكوليكشنات الشخصية بترتيب Silo.'},
              properties={'dexhub.tile_shape': 'landscape'})
+    add_item('إدارة كوليكشنات Silo', build_url(action='silo_tools'), is_folder=False,
+             art=root_art('settings'))
+    add_item('تنبيهات Silo والجزيرة', build_url(action='silo_inbox'), is_folder=False,
+             art=root_art('history'))
     add_item('المفضلة', build_url(action='silo_personal', source='favorites', title='المفضلة'),
              art=root_art('favorites'), info={'title': 'المفضلة', 'plot': 'مفضلة بروفايل Silo.'})
     add_item('قائمة المشاهدة',
@@ -9168,6 +9172,8 @@ def _silo_render_one(item, server):
             label, int(item.get('season') or 0), int(item.get('index') or 0))
     add_item(label, path, is_folder=is_folder, info=_plex_item_info(item),
              art=_silo_art(item), ids=_plex_item_ids(item),
+             context_menu=[(tr('قوائم وكوليكشنات Silo'),
+                            'RunPlugin(%s)' % build_url(action='silo_tools', item_id=item_id))],
              label2=('Silo • %s' % (item.get('info_line') or '')).rstrip(' •'))
     return True
 
@@ -9553,7 +9559,8 @@ def silo_play(item_id, server=None, force_native=False, resume_seconds=None, ui_
         elif not selected:
             selected = versions[0] if versions else {}
         resolved = silo_client.resolve_playback(
-            server, item_id, selected.get('media_source_id') or selected.get('file_id') or '')
+            server, item_id, selected.get('media_source_id') or selected.get('file_id') or '',
+            start_position=(resume_seconds if resume_seconds is not None else (item.get('resume_ms') or 0) / 1000))
     except Exception as exc:
         return _silo_error(exc)
     ids = item.get('ids') or {}
@@ -9604,6 +9611,7 @@ def silo_play(item_id, server=None, force_native=False, resume_seconds=None, ui_
         'show_tmdb_id': show_ids.get('tmdb_id') or '',
         'show_tvdb_id': show_ids.get('tvdb_id') or '',
         'subtitles': list((resolved.get('version') or selected).get('subtitles') or []),
+        'silo_session': resolved.get('silo_session') or {},
     }
     ctx['stream_key'] = cache_store.put('stream', {
         'stream_url': ctx['stream_url'], 'name': ctx['title'],
@@ -10091,6 +10099,10 @@ def nuvio_sync_menu():
 
     add_item(tr('مزامنة Nuvio الآن'), build_url(action='account_sync_now', service='nuvio'),
              is_folder=False, art=root_art('refresh'))
+    add_item(tr('استعادة نسخة محلية من مكتبة Nuvio'), build_url(action='nuvio_restore_library'),
+             is_folder=False, art=root_art('favorites'),
+             info={'title': tr('استعادة نسخة محلية من مكتبة Nuvio'),
+                   'plot': tr('أضف الأعمال من نسخة محفوظة إلى المفضلة؛ تُرفع عند المزامنة دون استبدال مكتبة الحساب.')})
     add_item(tr('تحديث Nuvio Home'), build_url(action='nuvio_pull_collections'),
              is_folder=False, art=root_art('movie_collections'),
              info={'title': tr('تحديث Nuvio Home'),
@@ -10098,6 +10110,25 @@ def nuvio_sync_menu():
     add_item(tr('فصل حساب Nuvio'), build_url(action='nuvio_logout'),
              is_folder=False, art=root_art('settings'))
     return end_dir(content='files', cache=False)
+
+def nuvio_restore_library():
+    snapshots = favorites_store.nuvio_library_backups()
+    if not snapshots:
+        notify(tr('لا توجد نسخة محلية محفوظة بعد. يبدأ حفظ النسخ من هذا الإصدار.'))
+        return
+    labels = ['%s • %d' % (time.strftime('%Y-%m-%d %H:%M', time.localtime(s['saved_at'])),
+                          len(s['rows'])) for s in snapshots]
+    index = xbmcgui.Dialog().select(tr('استعادة نسخة محلية من مكتبة Nuvio'), labels)
+    if index < 0:
+        return
+    if not xbmcgui.Dialog().yesno('Nuvio', tr('إضافة أعمال هذه النسخة إلى المفضلة ومزامنتها مع Nuvio؟')):
+        return
+    try:
+        count = favorites_store.restore_nuvio_library_backup(index)
+        notify(tr('تمت استعادة %s عمل إلى المفضلة') % count)
+    except Exception as exc:
+        error(str(exc))
+
 
 def stremio_repair_library():
     """v4.4.2: heal invalid datetime fields across the Stremio cloud library."""
@@ -15622,7 +15653,7 @@ _SESSION_CTX_COPY_KEYS = (
     # Watching row was permanently blank.  (Plex only looked fine because the
     # Plex apps write their own progress.)
     'server_type', 'server_url', 'token', 'item_id', 'rating_key',
-    'media_source_id', 'part_key', 'play_session_id', 'device_id', 'session_id',
+    'media_source_id', 'part_key', 'play_session_id', 'device_id', 'session_id', 'silo_session',
 )
 
 
@@ -15836,19 +15867,24 @@ def _refresh_native_playback_context(ctx):
         # v5.10.27: bound the refresh. It runs synchronously right before
         # Player.play, and the direct URL below is already a valid fallback.
         with emby_client.bounded_timeout(6):
-            resolved = client.resolve_playback(
-                server, item_id, str(ctx.get('media_source_id') or ''))
+            args = (server, item_id, str(ctx.get('media_source_id') or ''))
+            resolved = (client.resolve_playback(*args, start_position=ctx.get('resume_seconds'))
+                        if backend == 'silo' else client.resolve_playback(*args))
         if resolved.get('url'):
             ctx['stream_url'] = resolved.get('url')
         if resolved.get('media_source_id'):
             ctx['media_source_id'] = resolved.get('media_source_id')
         if resolved.get('play_session_id'):
             ctx['session_id'] = resolved.get('play_session_id')
+        if resolved.get('silo_session'):
+            ctx['silo_session'] = resolved['silo_session']
         version = resolved.get('version') or {}
         if version.get('subtitles'):
             ctx['subtitles'] = list(version.get('subtitles') or [])
         ctx['native_playback_resolved'] = True
     except Exception as exc:
+        if backend == 'silo':
+            raise
         # Keep the already-built direct URL as a compatibility fallback.
         try:
             xbmc.log('[DexHub] %s PlaybackInfo refresh failed; using direct fallback: %s' % (
@@ -20040,7 +20076,7 @@ def _add_iptv_continue_item(row):
              context_menu=menu, label2='IPTV')
 
 
-def iptv_cw_change(video_id='', watched=False):
+def iptv_cw_change(video_id='', watched=False, refresh=True, on_local=None):
     from . import iptv_progress
     try:
         if watched:
@@ -20049,9 +20085,16 @@ def iptv_cw_change(video_id='', watched=False):
         else:
             iptv_progress.remove(video_id)
             notify(tr('تم الإزالة من متابعة المشاهدة'))
+        _invalidate_nextup_cache()
+        _cw_progress_changed()
     except Exception as exc:
         error(tr('تعذّر الإزالة: %s') % exc)
-    xbmc.executebuiltin('Container.Refresh')
+        return False
+    if refresh:
+        xbmc.executebuiltin('Container.Refresh')
+    if on_local:
+        on_local()
+    return True
 
 
 def _finished_keys(row):
@@ -20845,7 +20888,7 @@ def continue_watching(page='0'):
     end_dir(content=content_type, cache=False)
 
 
-def cw_remove(media_type='', canonical_id='', video_id='', refresh=True):
+def cw_remove(media_type='', canonical_id='', video_id='', refresh=True, on_local=None):
     # v5.10.286: the card stands for a whole title (merged since v5.10.214):
     # deleting the one row it was built from let the title's next row (an
     # older episode, the same title from Trakt, Nuvio, Floppy, Simkl or a
@@ -20864,6 +20907,8 @@ def cw_remove(media_type='', canonical_id='', video_id='', refresh=True):
         return False
     if refresh:
         xbmc.executebuiltin('Container.Refresh')
+    if on_local:
+        on_local()
     _cw_remove_remote(members, episode)
     return True
 
@@ -20912,18 +20957,9 @@ def _cw_hide_title(media_type='', canonical_id='', video_id=''):
 
 
 def _cw_progress_changed():
-    """v5.10.286: Continue Watching changed: the skin's Home reads its
-    progress rows again (skinui worker), the Dex Hub Home's progress memo
-    and the widget replay (widget_cache) drop their copy."""
-    try:
-        from . import widget_cache
-        widget_cache.mark_changed()
-    except Exception:
-        pass
-    try:
-        xbmcgui.Window(10000).setProperty('dhs.progress.changed', '%.6f' % time.time())
-    except Exception:
-        pass
+    """Invalidate progress snapshots and wake every visible Home/catalog."""
+    from . import progress_events
+    progress_events.changed()
 
 
 def _cw_remove_remote(members, episode):
@@ -20972,14 +21008,20 @@ def _cw_remove_remote(members, episode):
         xbmc.log('[DexHub] cw_remove Nuvio: %s' % exc, xbmc.LOGWARNING)
 
 
-def cw_mark_watched(media_type='', canonical_id='', video_id=''):
+def cw_mark_watched(media_type='', canonical_id='', video_id='', refresh=True, on_local=None):
     try:
         playback_store.mark_watched(media_type, canonical_id, video_id)
         _invalidate_nextup_cache()
+        _cw_progress_changed()
         notify(tr('تم وسمه كمشاهد'))
     except Exception as exc:
         error(tr('تعذّر الوسم: %s') % exc)
-    xbmc.executebuiltin('Container.Refresh')
+        return False
+    if refresh:
+        xbmc.executebuiltin('Container.Refresh')
+    if on_local:
+        on_local()
+    return True
 
 
 
@@ -27741,6 +27783,12 @@ def _dispatch(params=None):
         return silo_login()
     if action == 'silo_qr_login':
         return silo_qr_login()
+    if action == 'silo_tools':
+        from . import silo_social
+        return silo_social.dispatch(params.get('item_id', ''))
+    if action == 'silo_inbox':
+        from . import island
+        return island.inbox()
     if action == 'silo_change_profile':
         return silo_change_profile()
     if action == 'silo_logout':
@@ -28027,6 +28075,8 @@ def _dispatch(params=None):
         return media_libraries_menu()
     if action == 'nuvio_sync_menu':
         return nuvio_sync_menu()
+    if action == 'nuvio_restore_library':
+        return nuvio_restore_library()
     if action == 'stremio_repair_library':
         return stremio_repair_library()
     if action == 'stremio_sync_menu':

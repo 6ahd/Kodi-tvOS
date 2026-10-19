@@ -23,17 +23,14 @@ for archive in sorted((base/'assets').glob('*.zip')):
    if element.text and addon_id+'/'+element.text in z.namelist():
     path=folder/element.text;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(z.read(addon_id+'/'+element.text))
   index.append(addon)
-repo_id='repository.dexworld.appletv';repo=ET.Element('addon',id=repo_id,name='DexWorld Apple TV Repository',version='1.0.0',**{'provider-name':'DexWorld'})
-ext=ET.SubElement(repo,'extension',point='xbmc.addon.repository',name='DexWorld Apple TV Repository');directory=ET.SubElement(ext,'dir')
-ET.SubElement(directory,'info',compressed='false').text=url+'addons.xml'
-ET.SubElement(directory,'checksum').text=url+'addons.xml.md5'
-ET.SubElement(directory,'datadir',zip='true').text=url
-meta=ET.SubElement(repo,'extension',point='xbmc.addon.metadata')
-ET.SubElement(meta,'summary',lang='en_GB').text='Dex Hub Apple TV player updates'
-ET.SubElement(meta,'description',lang='en_GB').text='Separate Apple TV addons with the original Dex Hub design.'
-ET.SubElement(meta,'platform').text='all';ET.SubElement(meta,'license').text='GPL-2.0-or-later'
+repo_id='repository.dexworld.appletv'
+repo=ET.parse(base/repo_id/'addon.xml').getroot()
+directory=repo.find('./extension[@point="xbmc.addon.repository"]/dir')
+directory.find('info').text=url+'addons.xml'
+directory.find('checksum').text=url+'addons.xml.md5'
+directory.find('datadir').text=url
 folder=out/repo_id;folder.mkdir(exist_ok=True);(folder/'addon.xml').write_bytes(ET.tostring(repo,encoding='utf-8',xml_declaration=True))
-archive=folder/(repo_id+'-1.0.0.zip')
+archive=folder/(repo_id+'-'+repo.get('version')+'.zip')
 with ZipFile(archive,'w',ZIP_DEFLATED) as z:z.write(folder/'addon.xml',repo_id+'/addon.xml')
 archive.with_suffix('.zip.md5').write_text(hashlib.md5(archive.read_bytes()).hexdigest());index.append(repo)
 content=ET.tostring(index,encoding='utf-8',xml_declaration=True);(out/'addons.xml').write_bytes(content);(out/'addons.xml.md5').write_text(hashlib.md5(content).hexdigest())

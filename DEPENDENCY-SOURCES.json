@@ -62,8 +62,16 @@
     "sha256": "9f7400a1de34448805830ad691666b62d76b2b3a62064fefe2c5cdd1dabaa5a6",
     "source": "Retained complete addon plus v17 fixes; see UPDATE-v17-AR.md"
   },
-  "script.dexhub.tvos.players-1.0.13.zip": {
-    "source": "Built from script.dexhub.tvos.players by release_assets.py",
-    "sha256": "15ce56ab981b800d58ac1b3a0ef96e9ee8a995a803ce12c0da4d564f722690e9"
+  "skin.dexhub.tvos-3.28.79.zip": {
+    "sha256": "731876a254af70f3eb33ce03187d0c41f4de0c943636b73834e238ce8988fba7",
+    "source": "Built from src/skin.dexhub.tvos; upstream packages recorded in APPLETV-SOURCES.json"
+  },
+  "script.dexhub.tvos.players-1.0.15.zip": {
+    "sha256": "376c409fd5ef3ae46225c89fff9e90d1256e394b2f5bba390cf6da15ff99b96d",
+    "source": "Built from script.dexhub.tvos.players by release_assets.py"
+  },
+  "plugin.video.dexhub.tvos-5.10.342.zip": {
+    "sha256": "4bbd75b0e8bd82305880abb956b181364b9fa45258cf2d5d16f63ff26b898549",
+    "source": "Built from src/plugin.video.dexhub.tvos; upstream packages recorded in APPLETV-SOURCES.json"
   }
 }

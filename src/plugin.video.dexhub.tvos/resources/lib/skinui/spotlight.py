@@ -298,8 +298,9 @@ class Spotlight(threading.Thread):
             # for the next one to take the open player over
             self.director.next_token()
             self.key, self.since, self.tried = target['key'], now, None
+            if self.immersive:          # v5.10.334: written only when it was set
+                C.set_prop('dhs.immersive', '')
             self.immersive = False
-            C.set_prop('dhs.immersive', '')
             if self.ours():
                 self.visible_since = 0.0
                 self._revealed = False
@@ -385,6 +386,16 @@ class Spotlight(threading.Thread):
             return None
         self.why = 'item %d' % container
         prefix = 'Container(%d).ListItem.' % container
+        # v5.10.334: the same card as the last look (the cursor rests, or a
+        # trailer plays) is not read again: six labels four times a second,
+        # each a wait on Kodi's graphics lock, while the remote moves
+        seen_id = info(prefix + 'Property(dhs.id)')
+        cached = getattr(self, '_target_cache', None)
+        if (seen_id and cached is not None and cached[0] == (container, seen_id)
+                and time.monotonic() - cached[2] < 3.0):
+            self.last = cached[1]
+            return self.last
+        self._target_cache = None
         video = info(prefix + 'Property(dhs.hero_video)')
         if info(prefix + 'Property(kind)') == 'folder' and video:
             if not C.prop('dhs.opt.kenburns'):
@@ -392,12 +403,15 @@ class Spotlight(threading.Thread):
             self.last = {'key': 'banner:' + C.short_id(video + info(prefix + 'Label')),
                          'video': video, 'imdb': '', 'title': info(prefix + 'Label')}
             return self.last
-        title_id = info(prefix + 'Property(dhs.id)')
+        title_id = seen_id
         imdb = info(prefix + 'UniqueID(imdb)')
         if not title_id or not imdb.startswith('tt'):
+            if title_id:
+                self._target_cache = ((container, title_id), None, time.monotonic())
             return None
         self.last = {'key': title_id, 'imdb': imdb, 'title': info(prefix + 'Label'),
                      'q': info(prefix + 'Property(dhs.q)')}
+        self._target_cache = ((container, title_id), self.last, time.monotonic())
         return self.last
 
     PREFETCH_DWELL = 1.2

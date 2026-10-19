@@ -36,8 +36,10 @@ bool CTVOSExternalApp::OpenURL(const std::string& url)
     for (NSURLQueryItem* item in components.queryItems)
       if ([item.name isEqualToString:@"target"] && item.value)
         target = [NSURL URLWithString:item.value];
-    if (!target || (![[target scheme] isEqualToString:@"infuse"] &&
-                    ![[target scheme] isEqualToString:@"open-vidhub"]))
+    // v21.3: every external player DexHub can hand a video to
+    NSSet* allowed = [NSSet setWithArray:@[@"infuse", @"open-vidhub", @"senplayer", @"vlc-x-callback",
+        @"outplayer", @"nplayer-http", @"nplayer-https", @"nativeplayer"]];
+    if (!target || ![allowed containsObject:[[target scheme] lowercaseString]])
       return false;
     dispatch_async(dispatch_get_main_queue(), ^{
       [[UIApplication sharedApplication] openURL:target options:@{} completionHandler:^(BOOL success) {

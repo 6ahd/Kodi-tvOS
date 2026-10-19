@@ -191,6 +191,7 @@
 	<expression name="dhs_addon_covers">Window.IsActive(sources_results.xml) | Window.IsActive(sources_loading.xml) | Window.IsActive(search_results.xml)</expression>
 	<expression name="dhs_trailer">!String.IsEmpty(Window(Home).Property(dhs.trailer.visible))</expression>
 	<expression name="dhs_immersive">!String.IsEmpty(Window(Home).Property(dhs.immersive))</expression>
+	<expression name="dhs_trailer_clean">[$EXP[dhs_stage] | $EXP[dhs_immersive]] + !String.IsEqual(Window(Home).Property(dhs.pref.homeui_trailer_clean),false)</expression>
 	<expression name="dhs_stage">!String.IsEmpty(Window(Home).Property(dhs.stage)) + !$EXP[dhs_immersive]</expression>
 	<expression name="dhs_playing">Player.HasVideo + String.IsEmpty(Window(Home).Property(dexhub.trailer.active))</expression>
 	<expression name="dhs_hr_spot">[String.IsEmpty(Window(Home).Property(dhs.fr)) | String.IsEqual(Window(Home).Property(dhs.fr),0)] + [Integer.IsGreater(Container(4000).NumItems,0) + !String.IsEqual(Window(Home).Property(dhs.tab),addons)] + [!String.IsEmpty(Window(Home).Property(dhs.hr.id)) + String.IsEqual(Window(Home).Property(dhs.hr.id),Container(4000).ListItem.Property(dhs.id))]</expression>
@@ -1299,6 +1300,11 @@
 		<value />
 	</variable>
 	<variable name="DhsHeroFanart">
+		<!-- 3.28.77: the backdrop the service settled on (the cursor rested), else the live one -->
+		<value condition="!String.IsEmpty(Window(Home).Property(dhs.bg.on)) + !String.IsEmpty(Window(Home).Property(dhs.bg))">$INFO[Window(Home).Property(dhs.bg)]</value>
+		<value>$VAR[DhsHeroFanartLive]</value>
+	</variable>
+	<variable name="DhsHeroFanartLive">
 		<value condition="String.IsEqual(Window(Home).Property(dhs.tab),addons) + String.IsEqual(Window(Home).Property(dhs.afr),2)">$INFO[Container(5102).ListItem.Art(fanart)]</value>
 		<value condition="String.IsEqual(Window(Home).Property(dhs.tab),addons)">$INFO[Container(5101).ListItem.Art(fanart)]</value>
 		<value condition="[String.IsEmpty(Window(Home).Property(dhs.fr)) | String.IsEqual(Window(Home).Property(dhs.fr),0)] + [Integer.IsGreater(Container(4000).NumItems,0) + !String.IsEqual(Window(Home).Property(dhs.tab),addons)]">$INFO[Container(4000).ListItem.Art(fanart)]</value>
@@ -4507,16 +4513,19 @@
 		<value>Saved and schedule</value>
 	</variable>
 	<variable name="DhPanelTitle">
+		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),monitored)">$INFO[Window(Home).Property(dhs.panel.label.monitored)]</value>
 		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),alerts)">$VAR[DhsS32100]</value>
 		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),schedule)">$VAR[DhsS32101]</value>
 		<value>$VAR[DhsS32099]</value>
 	</variable>
 	<variable name="DhPanelKick">
+		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),monitored)">$INFO[Window(Home).Property(dhs.panel.kick.monitored)]</value>
 		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),alerts)">$INFO[Window(Home).Property(dhs.panel.kick.alerts)]</value>
 		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),schedule)">$INFO[Window(Home).Property(dhs.panel.kick.schedule)]</value>
 		<value>$INFO[Window(Home).Property(dhs.panel.kick.saved)]</value>
 	</variable>
 	<variable name="DhPanelEmpty">
+		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),monitored)">$INFO[Window(Home).Property(dhs.panel.empty.monitored)]</value>
 		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),alerts)">$VAR[DhsS32118]</value>
 		<value condition="String.IsEqual(Skin.String(DexHub.PanelTab),schedule)">$VAR[DhsS32119]</value>
 		<value>$VAR[DhsS32108]</value>
@@ -4849,4 +4858,5 @@
             </control>
         </control>
     </include>
+	<expression name="dh_panel_monitored">String.IsEqual(Skin.String(DexHub.PanelTab),monitored)</expression>
 </includes>

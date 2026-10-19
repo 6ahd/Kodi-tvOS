@@ -1541,3 +1541,15 @@ msgstr "داخل البطاقة"
 msgctxt "#32931"
 msgid "Open sections on focus"
 msgstr "فتح الأقسام بالتمرير"
+
+msgctxt "#32932"
+msgid "Backdrop waits for the cursor"
+msgstr "الخلفية تتبع التحديد بعد التوقف"
+
+msgctxt "#32933"
+msgid "Clean trailer"
+msgstr "تريلر بدون كتابة"
+
+msgctxt "#32934"
+msgid "Ratings shown"
+msgstr "التقييمات الظاهرة"

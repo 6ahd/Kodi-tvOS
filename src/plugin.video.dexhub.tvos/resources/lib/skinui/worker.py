@@ -137,6 +137,7 @@ class Worker(object):
         self.player = xbmc.Player()
         self._republish_token = C.prop(C.PROP_REPUBLISH)
         self._progress_token = C.prop('dhs.progress.changed')
+        self._progress_action_token = C.prop('dhs.progress.action')
         self._playing = False
         self._real_since = 0.0
         self._progress_due = 0.0
@@ -376,6 +377,7 @@ class Worker(object):
                     C.log('theme:\n%s' % traceback.format_exc(), xbmc.LOGWARNING)
             self.watch_playback()
             now = time.time()
+            self._check_progress_actions(now)
             if self._progress_due and now >= self._progress_due:
                 self._progress_due = 0.0
                 self._progress_read_at = now
@@ -444,6 +446,8 @@ class Worker(object):
         strings.publish(force=True)
         if self.spotlight is not None:
             self.spotlight._settings = None
+        if 'ratings_shown' in changed and getattr(self, 'ratings', None) is not None:
+            self.ratings.shown = ''         # v5.10.334: the hero's ratings again, as chosen
         filters = changed & {'library_src', 'servers_src', 'show_servers'}
         if filters:
             if 'show_servers' in changed and snap.get('show_servers') == 'false' and C.prop('dhs.tab') == 'servers':
@@ -1109,6 +1113,18 @@ class Worker(object):
                 rows.fetch(tab, spec['id'], spec, fresh=True)   # titles again: it asks to publish
                 if self.rest(0.2):
                     return
+
+    def _check_progress_actions(self, now):
+        action_token = C.prop('dhs.progress.action')
+        if not action_token or action_token == self._progress_action_token:
+            return False
+        # Manual edits bypass the player debounce once, even just after a refresh.
+        self._progress_action_token = action_token
+        self._progress_token = C.prop('dhs.progress.changed')
+        self._progress_due = 0.0
+        self._progress_read_at = now
+        self.refresh_progress()
+        return True
 
     def refresh_progress(self):
         """Continue Watching, Next Up and the other progress rows, after

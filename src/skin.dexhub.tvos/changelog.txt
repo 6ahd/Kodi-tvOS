@@ -1,3 +1,8 @@
+2026-10-17 · 3.28.79 · Screensaver styles, sources page, island week, lighter skin
+- Home backdrop from dhs.bg (set when the cursor rests), the live one without the service.
+- Clean trailer: the hero's text and the corner logo fade during the trailer stage and full screen.
+- Island: the week you watched (time, 7 bars, counts), the lists move down; Saved rows add the season's episodes, dots, NEW EP or TONIGHT.
+
 3.28.76: Smaller Play, More info and Trailer pills on the Home, the island's tabs wrap around, and the title page's icon buttons end with More (Read synopsis, Change artwork). Apple TV player dependencies are retained.
 
 3.28.75: The power menu shows every name (they were empty), a Power icon of its own in the top bar, and the trailer inside the card plays in landscape and big cards too, the Legacy Home's rows among them. Apple TV player dependencies are retained.

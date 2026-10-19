@@ -2811,7 +2811,8 @@ def silo_play(item_id, server=None, force_native=False, resume_seconds=None, ui_
         elif not selected:
             selected = versions[0] if versions else {}
         resolved = silo_client.resolve_playback(
-            server, item_id, selected.get('media_source_id') or selected.get('file_id') or '')
+            server, item_id, selected.get('media_source_id') or selected.get('file_id') or '',
+            start_position=(resume_seconds if resume_seconds is not None else (item.get('resume_ms') or 0) / 1000))
     except Exception as exc:
         return _silo_error(exc)
     ids = item.get('ids') or {}
@@ -2862,6 +2863,7 @@ def silo_play(item_id, server=None, force_native=False, resume_seconds=None, ui_
         'show_tmdb_id': show_ids.get('tmdb_id') or '',
         'show_tvdb_id': show_ids.get('tvdb_id') or '',
         'subtitles': list((resolved.get('version') or selected).get('subtitles') or []),
+        'silo_session': resolved.get('silo_session') or {},
     }
     ctx['stream_key'] = cache_store.put('stream', {
         'stream_url': ctx['stream_url'], 'name': ctx['title'],
@@ -5565,7 +5567,7 @@ _SESSION_CTX_COPY_KEYS = (
     # Watching row was permanently blank.  (Plex only looked fine because the
     # Plex apps write their own progress.)
     'server_type', 'server_url', 'token', 'item_id', 'rating_key',
-    'media_source_id', 'part_key', 'play_session_id', 'device_id', 'session_id',
+    'media_source_id', 'part_key', 'play_session_id', 'device_id', 'session_id', 'silo_session',
 )
 
 def _augment_session_ctx(target, ctx, fallback_keys, include_stream_url=True):
@@ -5775,19 +5777,24 @@ def _refresh_native_playback_context(ctx):
         # v5.10.27: bound the refresh. It runs synchronously right before
         # Player.play, and the direct URL below is already a valid fallback.
         with emby_client.bounded_timeout(6):
-            resolved = client.resolve_playback(
-                server, item_id, str(ctx.get('media_source_id') or ''))
+            args = (server, item_id, str(ctx.get('media_source_id') or ''))
+            resolved = (client.resolve_playback(*args, start_position=ctx.get('resume_seconds'))
+                        if backend == 'silo' else client.resolve_playback(*args))
         if resolved.get('url'):
             ctx['stream_url'] = resolved.get('url')
         if resolved.get('media_source_id'):
             ctx['media_source_id'] = resolved.get('media_source_id')
         if resolved.get('play_session_id'):
             ctx['session_id'] = resolved.get('play_session_id')
+        if resolved.get('silo_session'):
+            ctx['silo_session'] = resolved['silo_session']
         version = resolved.get('version') or {}
         if version.get('subtitles'):
             ctx['subtitles'] = list(version.get('subtitles') or [])
         ctx['native_playback_resolved'] = True
     except Exception as exc:
+        if backend == 'silo':
+            raise
         # Keep the already-built direct URL as a compatibility fallback.
         try:
             xbmc.log('[DexHub] %s PlaybackInfo refresh failed; using direct fallback: %s' % (

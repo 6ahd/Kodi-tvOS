@@ -163,10 +163,10 @@ def _win():
         return None
 
 
-def _interactive_busy(max_age=180.0):
+def _interactive_busy(max_age=180.0, include_playback=True):
     """True while playback or a source/search interaction has priority."""
     try:
-        if xbmc.Player().isPlayingVideo():
+        if include_playback and xbmc.Player().isPlayingVideo():
             return True
     except Exception:
         pass
@@ -207,6 +207,7 @@ _VOLATILE_SETTINGS = frozenset((
     'welcome_seen', 'wizard_completed', 'metadata_generation', 'last_account_sync_at',
     'plex_client_identifier', 'plex_servers_cache_json', 'ui_lang_autodetected',
     'dexhub_defaults_rev',
+    'nuvio_token_keep', 'stremio_token_keep', 'trakt_token_keep',
     'switch_source_keymap_data',
     # v5.10.131: a theme (kept in step with skin.dexhub.tvos's colour theme)
     'theme_preset',
@@ -993,7 +994,8 @@ elif __name__ == '__main__':
         win = _win()
         last_pull = time.time()  # never force a full pull during Kodi boot
         dirty_since = None
-        next_retry = 0.0
+        next_retry = sync.next_retry_at()
+        cycle_backoff = 0.0
 
         while not mon.abortRequested():
             try:
@@ -1038,7 +1040,10 @@ elif __name__ == '__main__':
                 want_full = False
             pull_due = pull_due or want_full
 
-            if ((dirty_due or pull_due) and now >= next_retry and
+            retry_due = bool(next_retry and now >= next_retry)
+            # Playback already has a push-only reporter every 120s and on
+            # pause/stop/end. Never add a full-history sync while video plays.
+            if ((dirty_due or pull_due or retry_due) and now >= cycle_backoff and
                     not _interactive_busy() and sync.enabled_targets()):
                 acquired = _SYNC_CYCLE_LOCK.acquire(False)
                 if not acquired:
@@ -1051,6 +1056,7 @@ elif __name__ == '__main__':
                 except Exception:
                     pass
                 light = dirty_due and not pull_due
+                retry_pass = retry_due and not (dirty_due or pull_due)
                 try:
                     # Each service resolves its own direction and sections.
                     # v5.10.120: a local change (progress, the library) is
@@ -1059,23 +1065,23 @@ elif __name__ == '__main__':
                     # every playback asked Nuvio a dozen things each time,
                     # and Nuvio answered 429 (sync paused 10 minutes, the
                     # profile list unreadable meanwhile).
-                    if light:
-                        result = sync.run_sync(only=('progress', 'library'))
+                    if retry_pass:
+                        result = sync.run_sync(background=True, retry_only=True)
+                    elif light:
+                        result = sync.run_sync(only=('progress', 'library'), background=True)
                     else:
-                        result = sync.run_sync()
-                    if result and result.get('ok'):
-                        if not light:
-                            last_pull = time.time()
-                            if want_full and win:
-                                win.clearProperty('dexhub.sync.want_full')
-                        dirty_since = None
-                        next_retry = 0.0
-                    else:
-                        next_retry = time.time() + 300.0
-                        if dirty and win:
-                            win.setProperty(SYNC_DIRTY_PROP, '1')
+                        result = sync.run_sync(background=True)
+                    # A partial failure has its own section retry schedule.
+                    # The normal full pull still waits for its usual interval.
+                    if not light and not retry_pass:
+                        last_pull = time.time()
+                        if want_full and win:
+                            win.clearProperty('dexhub.sync.want_full')
+                    dirty_since = None
+                    next_retry = (result or {}).get('retry_at') or 0.0
+                    cycle_backoff = 0.0
                 except Exception as exc:
-                    next_retry = time.time() + 300.0
+                    cycle_backoff = time.time() + 300.0
                     if dirty and win:
                         try:
                             win.setProperty(SYNC_DIRTY_PROP, '1')
@@ -1165,6 +1171,19 @@ elif __name__ == '__main__':
         xbmc.log('[DexHub] subtitle AutoSync thread failed: %s' % exc, xbmc.LOGWARNING)
 
     # v5.10.217: a notification on the day a followed show has a new episode
+    def _silo_notifications_worker():
+        try:
+            from resources.lib import silo_notifications
+            silo_notifications.run(monitor)
+        except Exception as exc:
+            xbmc.log('[DexHub] Silo inbox worker stopped: %s' % type(exc).__name__, xbmc.LOGWARNING)
+
+    try:
+        import threading as _thr
+        _thr.Thread(target=_silo_notifications_worker, name='DexHub-SiloInbox', daemon=True).start()
+    except Exception:
+        pass
+
     def _reminders_worker():
         try:
             from resources.lib import reminders as _reminders

@@ -70,6 +70,9 @@
 		<setting id="homeui_nav_icons_only" type="bool" label="31156" default="false" visible="false" />
 		<setting id="homeui_nav_autohide" type="bool" label="31156" default="false" visible="false" />
 		<setting id="homeui_nav_focus_open" type="bool" label="32931" default="false" visible="false" />
+		<setting id="homeui_bg_settle" type="bool" label="32932" default="true" visible="false" />
+		<setting id="homeui_trailer_clean" type="bool" label="32933" default="true" visible="false" />
+		<setting id="ratings_shown" type="text" label="32934" default="" visible="false" />
 		<setting id="homeui_nav_names" type="bool" label="31165" default="false" />
 		<setting id="homeui_row_dim" type="labelenum" label="31136" values="light|off|strong" entries="light|off|strong" lvalues="31137|31138|31139" default="light" />
 		<setting id="homeui_show_continue" type="bool" label="31011" default="true" />
@@ -360,6 +363,9 @@
 		<setting id="global_art_map" type="text" default="{}" visible="false" />
 		<setting id="last_account_sync_at" type="text" default="0" visible="false" />
 		<setting id="plex_auth_json" type="text" default="" visible="false" />
+		<setting id="nuvio_token_keep" type="text" default="" visible="false" />
+		<setting id="stremio_token_keep" type="text" default="" visible="false" />
+		<setting id="trakt_token_keep" type="text" default="" visible="false" />
 		<setting id="plex_client_identifier" type="text" default="" visible="false" />
 		<setting id="plex_servers_cache_json" type="text" default="" visible="false" />
 		<setting id="poster_source_mode" type="text" default="Local only" visible="false" />

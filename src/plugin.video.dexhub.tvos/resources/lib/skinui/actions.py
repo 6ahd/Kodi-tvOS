@@ -808,7 +808,6 @@ def _set_watched(t, row, watched):
     t.publish()
     # the episodes list reads its season again; the Home's progress rows follow
     C.set_prop('dhs.tp.rev.episodes', '%d' % int(time.time() * 1000))
-    C.set_prop('dhs.progress.changed', '%.3f' % time.time())
 
 
 def open_title(params, handle):
@@ -1228,7 +1227,10 @@ ROUTES = {
     'skin_warm_sources': warm_sources,
     'skin_opengrid': open_grid,
     'skin_panel': lambda params, handle: _panel('listing', params, handle),
+    'skin_alert_readall': lambda params, handle: _panel('read_all', params, handle),
+    'skin_alert_open': lambda params, handle: _panel('open_alert', params, handle),
     'skin_panel_counts': lambda params, handle: _panel('counts', params, handle),
+    'skin_watch_sources': lambda params, handle: __import__('resources.lib.watch_sources', fromlist=['menu']).menu(params, handle),
     'skin_panel_refresh': lambda params, handle: _panel('refresh', params, handle),
     'skin_trailer': trailer,
     'skin_fav': favourite,

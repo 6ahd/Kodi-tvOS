@@ -43,14 +43,16 @@ for API in startEmbedded snapshotForToken command; do
 done
 # Xcode may omit custom INFOPLIST_KEY settings for generated framework plists.
 # Stamp the API only after checking the actual compiled exports.
-"$PYTHON" - "$FRAMEWORK/Info.plist" <<'PY'
-import plistlib, sys
+"$PYTHON" - "$FRAMEWORK/Info.plist" "$BASE/ENGINE-RELEASE.json" <<'PY'
+import json, plistlib, sys
 from pathlib import Path
 path = Path(sys.argv[1])
 data = plistlib.loads(path.read_bytes())
 data['DexHubBridgeAPI'] = 2
-data['DexHubBridgeRevision'] = 20
-data['DexHubAetherVersion'] = '7.38.1'
+release = json.loads(Path(sys.argv[2]).read_text())
+data['DexHubBridgeRevision'] = release['bridge_revision']
+data['DexHubAetherVersion'] = release['version']
+data['DexHubAetherCommit'] = release['commit']
 path.write_bytes(plistlib.dumps(data, fmt=plistlib.FMT_BINARY))
 PY
 echo "Framework API 2 verified. Continuing with Kodi integration."

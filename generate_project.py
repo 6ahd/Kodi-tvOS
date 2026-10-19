@@ -17,12 +17,12 @@ pbx = '''// !$*UTF8*$!
  objectVersion = 56;
  objects = {
   A00000000000000000000001 = {isa = PBXProject; attributes = {LastUpgradeCheck = 1600;}; buildConfigurationList = A00000000000000000000010; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A00000000000000000000002; productRefGroup = A00000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000004); packageReferences = (A00000000000000000000020);};
-  A00000000000000000000002 = {isa = PBXGroup; children = (A00000000000000000000005, A00000000000000000000003); sourceTree = "<group>";};
+  A00000000000000000000002 = {isa = PBXGroup; children = (A00000000000000000000005, A00000000000000000000023, A00000000000000000000003); sourceTree = "<group>";};
   A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000006); name = Products; sourceTree = "<group>";};
   A00000000000000000000004 = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000011; buildPhases = (A00000000000000000000007, A00000000000000000000008); buildRules = (); dependencies = (); name = DexAetherBridge; productName = DexAetherBridge; productReference = A00000000000000000000006; productType = "com.apple.product-type.framework"; packageProductDependencies = (A00000000000000000000021);};
   A00000000000000000000005 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DexAetherEmbedded.swift; sourceTree = "<group>";};
   A00000000000000000000006 = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DexAetherBridge.framework; sourceTree = BUILT_PRODUCTS_DIR;};
-  A00000000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000009); runOnlyForDeploymentPostprocessing = 0;};
+  A00000000000000000000007 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000009, A00000000000000000000024); runOnlyForDeploymentPostprocessing = 0;};
   A00000000000000000000008 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000022); runOnlyForDeploymentPostprocessing = 0;};
   A00000000000000000000009 = {isa = PBXBuildFile; fileRef = A00000000000000000000005;};
   A00000000000000000000010 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000012, A00000000000000000000013); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
@@ -34,6 +34,8 @@ pbx = '''// !$*UTF8*$!
   A00000000000000000000020 = {isa = XCLocalSwiftPackageReference; relativePath = __ENGINE__;};
   A00000000000000000000021 = {isa = XCSwiftPackageProductDependency; package = A00000000000000000000020; productName = AetherEngine;};
   A00000000000000000000022 = {isa = PBXBuildFile; productRef = A00000000000000000000021;};
+  A00000000000000000000023 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleWindowIndex.swift; sourceTree = "<group>";};
+  A00000000000000000000024 = {isa = PBXBuildFile; fileRef = A00000000000000000000023;};
  };
  rootObject = A00000000000000000000001;
 }

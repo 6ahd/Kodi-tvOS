@@ -3,6 +3,11 @@ from dexhub_navigation import install_keymap
 
 if xbmc.getCondVisibility('System.Platform.TVOS'):
     try:
+        from repository_setup import migrate
+        migrate()
+    except Exception:
+        xbmc.log('DexHub: Apple TV repository migration remains pending', xbmc.LOGWARNING)
+    try:
         from stable_defaults import install as install_defaults
         install_defaults()
     except Exception:

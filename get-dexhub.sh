@@ -1,23 +1,34 @@
 #!/usr/bin/env bash
-# Download the Dex Hub add-on and skin ZIPs (release files, not source) into assets/.
-# They are published on this repository's Releases page. Skips files already present.
+# Download missing Apple TV add-on/skin assets from the configured update source.
 set -euo pipefail
 BASE="$(cd "$(dirname "$0")" && pwd)"
-REPO="${DEX_GITHUB_REPO:-6ahd/DexHub-tvOS}"
-TAG="${DEX_RELEASE_TAG:-latest}"
+REPO_URL="${DEX_REPO_URL:-https://dexworld.cc/appletv/}"
+REPO_URL="${REPO_URL%/}/"
 if ls "$BASE"/assets/plugin.video.dexhub.tvos-*.zip >/dev/null 2>&1 && ls "$BASE"/assets/skin.dexhub.tvos-*.zip >/dev/null 2>&1; then
   echo "Dex Hub add-on and skin already in assets/."
   exit 0
 fi
-if [ "$TAG" = latest ]; then API="https://api.github.com/repos/$REPO/releases/latest"; else API="https://api.github.com/repos/$REPO/releases/tags/$TAG"; fi
-URLS="$(curl -fsSL "$API" | python3 -c '
-import json, sys
-for asset in json.load(sys.stdin).get("assets", []):
-    name = asset["name"]
-    if name.endswith(".zip") and name.startswith(("plugin.video.dexhub.tvos-", "skin.dexhub.tvos-")):
-        print(asset["browser_download_url"])')"
-[ -n "$URLS" ] || { echo "No Dex Hub add-on or skin ZIP found in release $TAG of $REPO."; exit 1; }
+INDEX="$(mktemp)"
+trap 'rm -f "$INDEX"' EXIT
+curl -fsSL --retry 3 "$REPO_URL"addons.xml -o "$INDEX"
+URLS="$(python3 - "$INDEX" "$REPO_URL" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+from urllib.parse import urlsplit
+url = sys.argv[2]
+if urlsplit(url).scheme not in ('https', 'http') or not urlsplit(url).netloc:
+    raise SystemExit('Invalid repository URL')
+addons = {row.get('id'): row.get('version') for row in ET.parse(sys.argv[1]).getroot()}
+for identifier in ('plugin.video.dexhub.tvos', 'skin.dexhub.tvos'):
+    version = addons[identifier]
+    if not version or any(c not in '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.+-' for c in version):
+        raise SystemExit('Invalid repository add-on version')
+    print(url + identifier + '/' + identifier + '-' + version + '.zip')
+PY
+)"
 for URL in $URLS; do
-  echo "Downloading $(basename "$URL")"
-  curl -fL --retry 3 -o "$BASE/assets/$(basename "$URL")" "$URL"
+  FILE="$BASE/assets/$(basename "$URL")"
+  curl -fLsS --retry 3 -o "$FILE.tmp" "$URL"
+  unzip -t "$FILE.tmp" >/dev/null
+  mv "$FILE.tmp" "$FILE"
 done

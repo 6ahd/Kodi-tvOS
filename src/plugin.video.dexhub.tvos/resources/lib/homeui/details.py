@@ -1328,6 +1328,8 @@ class DetailsWindow(W._BaseWindow):
                                100.0, '', 'watched', tmdb_id='' if self.series else (self.tmdb_id or ''),
                                imdb_id='' if self.series else (self.hero.get('imdb_id') or ''),
                                show_tmdb_id=self.tmdb_id if self.series else '')
+                from .. import progress_events
+                progress_events.changed()
                 # v5.10.171: Floppy hears it too (playback reaches it through
                 # the Floppy service add-on; a mark by hand never played)
                 try:
@@ -1344,6 +1346,8 @@ class DetailsWindow(W._BaseWindow):
             elif existing:
                 P.delete_entry(existing.get('media_type') or media, existing.get('canonical_id') or self.canonical,
                                existing.get('video_id') or video_id)
+                from .. import progress_events
+                progress_events.changed()
         except Exception:
             self.app.log('watched failed:\n%s' % traceback.format_exc(), xbmc.LOGWARNING)
         self._load_progress()

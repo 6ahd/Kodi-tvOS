@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
-<addon id="plugin.video.dexhub.tvos" name="Dex Hub (Apple TV)" version="5.10.331" provider-name="Dex Hub">
+<?xml version='1.0' encoding='UTF-8'?>
+<addon id="plugin.video.dexhub.tvos" name="Dex Hub (Apple TV)" version="5.10.342" provider-name="Dex Hub">
     <requires>
   <import addon="script.module.dexhub.tvos.compat" version="1.0.0" optional="true" />
         <import addon="xbmc.python" version="3.0.0" />
@@ -36,7 +36,7 @@
         <description lang="ar">Dex Hub نسخة مستقلة لـ Kodi. أضف روابط Stremio، واستخدم مصادر Plex وEmby/Jellyfin وSilo الأصلية، وشغّل الترجمات الخارجية، واربط Trakt، واستخدم Dex Hub كمشغّل لـ TMDb Helper، وحافظ على قائمة متابعة موحّدة محلياً.</description>
         <disclaimer lang="en_GB">The author of this addon does not host any of the content which is found and has no affiliation with any of the content providers. The author is in no way affiliated with Kodi, Team Kodi, or the XBMC Foundation.</disclaimer>
         <disclaimer lang="ar">مؤلّف هذه الإضافة لا يستضيف أيًّا من المحتوى الذي يتم العثور عليه، وليس له أي ارتباط بأي من مزوّدي المحتوى. لا يرتبط المؤلّف بأي شكل مع Kodi أو فريق Kodi أو مؤسّسة XBMC.</disclaimer>
-        <news>Choosing a subtitle from a subtitle service in the player's subtitle page no longer opens the Home over the video: Kodi handled OK on that list itself, the pick now goes to Dex Hub. Pairs with skin 3.28.76.</news>
+        <news>Test build: native Silo alerts, counts and read receipts in the skin island panel.</news>
         <source>https://github.com/6ahd/plugin.video.dexhub.tvos</source>
         <website>https://dexworld.cc</website>
         <assets>

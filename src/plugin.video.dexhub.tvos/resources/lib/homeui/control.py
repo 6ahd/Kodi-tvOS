@@ -67,6 +67,7 @@ SECTION_LIST = (
         ('nav_icons', 'toggle', 'bars', 'القائمة الجانبية أيقونات فقط', 'ما تنفتح بالكلمات لما تروح لها', 'skin'),
         ('nav_autohide', 'toggle', 'eye-slash', 'إخفاء القائمة عند التمرير', 'الشريط العلوي أو القائمة الجانبية تختفي لما تنزل للصفوف وترجع لما تطلع أو تروح يسار', 'skin'),
         ('nav_focus_open', 'toggle', 'circle-dot', 'فتح الأقسام بالتمرير', 'القسم ينفتح لما توقف على أيقونته ثانية، بدون ضغط', 'skin'),
+        ('bg_settle', 'toggle', 'image', 'الخلفية تتبع التحديد بعد التوقف', 'خلفية الرئيسية تتغير لما توقف على العمل، فالتنقل أخف', 'skin'),
         ('nav_names', 'toggle', 'list-ul', 'أسماء الأقسام', 'أسماء بجانب أيقونات الشريط', ''),
         ('size', 'open', 'up-right-and-down-left-from-center', 'حجم الواجهة والبطاقات', 'من 50% إلى 200%', ''),
         ('card_style', 'pick', 'layer-group', 'عناوين البطاقات', 'على الصورة أو تحتها أو بدون', ''),
@@ -89,6 +90,7 @@ SECTION_LIST = (
         ('trailer_sound', 'toggle', 'film', 'صوت التريلر', 'التريلر بصوته أو صامت', ''),
         ('trailer_volume', 'pick', 'film', 'مستوى صوت التريلر', 'من 0 إلى 100؛ يرجع صوت المشاهدة بعد التريلر', ''),
         ('trailer_place', 'pick', 'clapperboard', 'مكان التريلر', 'خلف الصفحة، أو داخل البطاقة المحددة وهي مفتوحة في صفها', ''),
+        ('trailer_clean', 'toggle', 'eye-slash', 'تريلر بدون كتابة', 'الشعار والتصنيفات والتقييمات تختفي وقت التريلر وترجع مع أي زر', ''),
     )),
     ('player', 'circle-play', 'المشغل', 'التشغيل والرموز والترجمة', (
         ('player', 'open', 'circle-play', 'خيارات المشغل', 'الشعار والتقييمات وسطر المعلومات', 'player'),
@@ -136,6 +138,7 @@ SECTION_LIST = (
         ('posters', 'open', 'images', 'مصدر البوسترات', 'بوسترات الكتالوجات كلها', ''),
         ('logos', 'open', 'image', 'الشعارات والخلفيات', 'Fanart.tv وClearLogo', ''),
         ('ratings', 'toggle', 'star', 'تعزيز التقييمات', 'التقييمات وشعار الشبكة', ''),
+        ('ratings_pick', 'run', 'star', 'التقييمات الظاهرة', 'اختار اللي يظهر: IMDb وRotten Tomatoes وMetacritic وغيرها', ''),
         ('meta_refresh', 'run', 'arrows-rotate', 'مسح كاش الميتاداتا', 'البيانات والصور من جديد', ''),
     )),
     ('accounts', 'user-gear', 'الحسابات والمصادر', 'Nuvio وTrakt والسيرفرات والإضافات', (
@@ -271,7 +274,7 @@ PICK_LINES = {
 TOGGLES = {'library_split': ('library_split_media', 'true'), 'badges_visible': ('player_badges_visible', 'true'),
            'row_source': ('homeui_show_row_source', 'true'), 'plot_scroll': ('homeui_plot_scroll', 'true'),
            'hide_plot': ('homeui_hide_plot', 'false'), 'rating_inline': ('homeui_rating_inline', 'true'),
-           'compact_hero': ('homeui_compact_hero', 'true'), 'nav_icons': ('homeui_nav_icons_only', 'false'), 'nav_autohide': ('homeui_nav_autohide', 'false'), 'nav_focus_open': ('homeui_nav_focus_open', 'false'), 'carousel': ('homeui_carousel', 'true'),'trailer_sound': ('homeui_trailer_sound', 'true'), 'ratings': ('metadata_badges', 'true'),
+           'compact_hero': ('homeui_compact_hero', 'true'), 'nav_icons': ('homeui_nav_icons_only', 'false'), 'nav_autohide': ('homeui_nav_autohide', 'false'), 'nav_focus_open': ('homeui_nav_focus_open', 'false'), 'bg_settle': ('homeui_bg_settle', 'true'), 'trailer_clean': ('homeui_trailer_clean', 'true'), 'carousel': ('homeui_carousel', 'true'),'trailer_sound': ('homeui_trailer_sound', 'true'), 'ratings': ('metadata_badges', 'true'),
            'nav_names': ('homeui_nav_names', 'false'), 'follow_merge': ('follow_merge', 'true'),
            'trakt_smart': ('trakt_smart_sync', 'true'), 'season_names': ('season_names', 'true'),
            'reminders': ('episode_reminders', 'true'),
@@ -279,7 +282,7 @@ TOGGLES = {'library_split': ('library_split_media', 'true'), 'badges_visible': (
            'kenburns': ('homeui_kenburns', 'true'), 'focus_gif': ('homeui_focus_gif', 'true')}
 SIZES = {'': 'عادي', 'large': 'كبير', 'xlarge': 'كبير جداً',
          'normal': 'عادي', 'extra large': 'كبير جداً'}
-_SETTINGS = ('homeui_nav_icons_only', 'homeui_nav_autohide', 'homeui_nav_focus_open', 'library_split_media', 'player_badges_visible', 'player_badges_brightness', 'homeui_poster_scale', 'homeui_show_row_source', 'homeui_title_style', 'homeui_background_style', 'homeui_plot_scroll', 'homeui_hide_plot', 'homeui_rating_inline', 'homeui_compact_hero', 'homeui_carousel', 'homeui_layout_mode', 'homeui_nav_position', 'homeui_metadata_language', 'server_metadata', 'homeui_card_style', 'homeui_focus_motion',
+_SETTINGS = ('homeui_nav_icons_only', 'homeui_nav_autohide', 'homeui_nav_focus_open', 'homeui_bg_settle', 'homeui_trailer_clean', 'ratings_shown', 'library_split_media', 'player_badges_visible', 'player_badges_brightness', 'homeui_poster_scale', 'homeui_show_row_source', 'homeui_title_style', 'homeui_background_style', 'homeui_plot_scroll', 'homeui_hide_plot', 'homeui_rating_inline', 'homeui_compact_hero', 'homeui_carousel', 'homeui_layout_mode', 'homeui_nav_position', 'homeui_metadata_language', 'server_metadata', 'homeui_card_style', 'homeui_focus_motion',
              'homeui_row_dim', 'homeui_trailer_sound', 'metadata_badges', 'homeui_nav_names', 'homeui_trailers',
              'homeui_trailer_delay', 'homeui_trailer_volume', 'homeui_trailer_mode', 'homeui_size', 'global_meta_source_id', 'global_meta_source_all',
              'tmdb_api_key', 'global_poster_source_id', 'follow_order', 'library_sort', 'follow_merge',
@@ -490,6 +493,12 @@ class ControlCentre(xbmcgui.WindowXMLDialog):
             setting, default = TOGGLES[key]
             on = (snap.get(setting) or default).lower() == 'true'
             return (tr('شغال') if on else tr('مطفأ')), ('on' if on else 'off')
+        if key == 'ratings_pick':
+            from . import ratings as RB
+            keys = RB.chosen(snap.get('ratings_shown'))
+            if len(keys) == len(RB.ORDER):
+                return tr('الكل'), ''
+            return ' · '.join(RB.NAMES[k] for k in keys)[:60], ''
         if key == 'continue_split':
             try:
                 from .layout import continue_is_split
@@ -804,6 +813,10 @@ class ControlCentre(xbmcgui.WindowXMLDialog):
 
     def _run(self, key):
         tr = self.tr
+        if key == 'ratings_pick':
+            # v5.10.334: which ratings show (the Home, the title pages, the player)
+            from . import ratings as RB
+            return RB.pick(tr)
         if key == 'poster_scale':
             from ..home_preferences import choose_poster_scale
             return choose_poster_scale(tr)

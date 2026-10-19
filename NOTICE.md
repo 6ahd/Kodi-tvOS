@@ -8,11 +8,11 @@ The app this repository builds combines the parts below. Each keeps its own lice
 | Component | Use | Licence |
 |---|---|---|
 | [Kodi](https://github.com/xbmc/xbmc) 22.0 RC1 (Piers) | the app | GPL-2.0-or-later. Kodi® is a trademark of the XBMC Foundation; this is an unofficial build |
-| [AetherEngine](https://github.com/superuser404notfound/AetherEngine) 7.38.1 | video player | LGPL-3.0 with an App Store / DRM exception (`licenses/AetherEngine-LICENSE.txt`) |
+| [AetherEngine](https://github.com/superuser404notfound/AetherEngine) 7.40.1 | video player | LGPL-3.0 with an App Store / DRM exception (`licenses/AetherEngine-LICENSE.txt`) |
 | [FFmpegBuild](https://github.com/superuser404notfound/FFmpegBuild) 3.7.1 | FFmpeg, dav1d, zimg, zvbi frameworks | LGPL-2.1 (`licenses/FFmpegBuild-LICENSE.txt`) |
 | [LibDovi](https://github.com/superuser404notfound/LibDovi) 2.1.0 | Dolby Vision RPU | MIT (`licenses/LibDovi-LICENSE.txt`) |
-| [LibTrueHD](https://github.com/superuser404notfound/LibTrueHD) 2.3.1 | TrueHD Atmos decoding | MIT (`licenses/LibTrueHD-LICENSE.txt`) |
-| [LibDTSX](https://github.com/superuser404notfound/LibDTSX) 2.0.0 | DTS:X decoding (DTSX.framework, a dynamic framework you can replace) | LGPL-3.0-or-later, the `dca` crate being a port of FFmpeg's LGPL decoder (`licenses/LibDTSX-NOTICE.txt`, `licenses/LibDTSX-LGPL-3.0.txt`; also in the app's `Licenses/LibDTSX`) |
+| [LibTrueHD](https://github.com/superuser404notfound/LibTrueHD) 3.0.0 | TrueHD Atmos decoding | MIT (`licenses/LibTrueHD-LICENSE.txt`) |
+| [LibDTSX](https://github.com/superuser404notfound/LibDTSX) 3.0.0 | DTS:X decoding (DTSX.framework, a dynamic framework you can replace) | LGPL-3.0-or-later, the `dca` crate being a port of FFmpeg's LGPL decoder (`licenses/LibDTSX-NOTICE.txt`, `licenses/LibDTSX-LGPL-3.0.txt`; also in the app's `Licenses/LibDTSX`) |
 | [SMBClient](https://github.com/kishikawakatsumi/SMBClient) 0.3.1 | SMB | MIT |
 | TMDb Helper, skinvariables, jurialmunkey module, infotagger (jurialmunkey) | add-ons in `assets/` | GPL-3.0 |
 | requests, urllib3, certifi, chardet, idna, six, qrcode, addon.signals | Python modules in `assets/` | their own licences, inside each ZIP |

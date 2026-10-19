@@ -1,0 +1,17 @@
+{
+  "app_version": "21.42",
+  "bridge_revision": 21,
+  "version": "7.40.1",
+  "commit": "93d54e5067ca0ad856259c0ebc1693aeafa20677",
+  "dependencies": {
+    "FFmpegBuild": "3.7.1",
+    "SMBClient": "0.3.1",
+    "LibDovi": "2.1.0",
+    "LibTrueHD": "3.0.0",
+    "LibDTSX": "3.0.0"
+  },
+  "traits": [
+    "TrueHDObjectAudio",
+    "DTSXObjectAudio"
+  ]
+}

@@ -132,7 +132,13 @@ def play_with_context(api, ctx, stream_key='', fallback_keys=None, entries_meta=
     # callbacks from a replaced source. A unique id lets the service suppress
     # duplicate resume/heartbeat work and prevents an old callback from owning
     # or clearing the replacement session.
-    ctx = api._refresh_native_playback_context(ctx)
+    try:
+        ctx = api._refresh_native_playback_context(ctx)
+    except Exception as exc:
+        if str(ctx.get('server_type') or '').lower() == 'silo':
+            api._silo_error(exc)
+            return None
+        raise
     try:
         import uuid as _uuid
         ctx = dict(ctx or {})

@@ -3400,6 +3400,19 @@ STRINGS.update({
     'إخفاء القائمة عند التمرير': 'Hide the menu while scrolling',
     'الشريط العلوي أو القائمة الجانبية تختفي لما تنزل للصفوف وترجع لما تطلع أو تروح يسار': 'The top bar or the side menu hides when you go down the rows and comes back when you go up or left',
     'فتح الأقسام بالتمرير': 'Open sections on focus',
+    # v5.10.334: the screensaver's styles
+    'هذا الأسبوع': 'This week',
+    'أسبوعك': 'Your week',
+    'التالي لك': 'Up next for you',
+    'OK للمتابعة': 'Press OK to open',
+    'جديد في قائمتك': 'New on your list',
+    # v5.10.334: the Home's backdrop once the cursor rests
+    'الخلفية تتبع التحديد بعد التوقف': 'Backdrop waits for the cursor',
+    'تريلر بدون كتابة': 'Clean trailer',
+    'الشعار والتصنيفات والتقييمات تختفي وقت التريلر وترجع مع أي زر': 'The logo, genres and ratings hide while a trailer plays and come back with any key',
+    'التقييمات الظاهرة': 'Ratings shown',
+    'اختار اللي يظهر: IMDb وRotten Tomatoes وMetacritic وغيرها': 'Pick which show: IMDb, Rotten Tomatoes, Metacritic and more',
+    'خلفية الرئيسية تتغير لما توقف على العمل، فالتنقل أخف': 'The Home backdrop changes when the cursor rests on a title, so moving around is lighter',
     'القسم ينفتح لما توقف على أيقونته ثانية، بدون ضغط': 'A section opens when the focus rests on its icon for a second, without a press',
     'خيارات الطاقة': 'Power options',
     'إعادة تشغيل الجهاز': 'Restart',
@@ -3484,4 +3497,12 @@ STRINGS.update({
 # v5.10.304: a Nuvio sign in waits for its profile before the sync
 STRINGS.update({
     'اختر بروفايل Nuvio أولاً، وبعدها تبدأ المزامنة': 'Choose a Nuvio profile first, then the sync starts',
+})
+
+STRINGS.update({
+    'استعادة نسخة محلية من مكتبة Nuvio': 'Restore a local Nuvio library backup',
+    'أضف الأعمال من نسخة محفوظة إلى المفضلة؛ تُرفع عند المزامنة دون استبدال مكتبة الحساب.': 'Add titles from a saved backup to favorites; sync adds them without replacing the account library.',
+    'لا توجد نسخة محلية محفوظة بعد. يبدأ حفظ النسخ من هذا الإصدار.': 'No local backup yet. Backups start with this version.',
+    'إضافة أعمال هذه النسخة إلى المفضلة ومزامنتها مع Nuvio؟': 'Add these backed-up titles to favorites and sync them with Nuvio?',
+    'تمت استعادة %s عمل إلى المفضلة': 'Restored %s titles to favorites',
 })

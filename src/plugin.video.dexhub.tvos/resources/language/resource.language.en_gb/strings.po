@@ -1541,3 +1541,15 @@ msgstr ""
 msgctxt "#32931"
 msgid "Open sections on focus"
 msgstr "Open sections on focus"
+
+msgctxt "#32932"
+msgid "Backdrop waits for the cursor"
+msgstr ""
+
+msgctxt "#32933"
+msgid "Clean trailer"
+msgstr ""
+
+msgctxt "#32934"
+msgid "Ratings shown"
+msgstr ""

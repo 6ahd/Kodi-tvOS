@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import UIKit
 import AVFoundation
 import AetherEngine
@@ -187,6 +188,9 @@ private final class EmbeddedSession {
     private var audioRows: [[String: Any]] = []
     private var subtitleRows: [[String: Any]] = []
     private var trackRevision = 0
+    private var retainedCues: [SubtitleCue] = []
+    private var cueIndex = SubtitleWindowIndex()
+    private var cueUpdates: AnyCancellable?
 
     init(request: NSDictionary, parent: UIView, overlay: UIView) throws {
         self.request = request
@@ -207,6 +211,11 @@ private final class EmbeddedSession {
         surface.setNeedsLayout()
         surface.layoutIfNeeded()
         engine.setNativeSubtitleRendering(false)
+        cueUpdates = engine.$subtitleCues.sink { [weak self] cues in
+            guard let self else { return }
+            retainedCues = cues
+            cueIndex.update(cues, start: { $0.startTime }, end: { $0.endTime })
+        }
     }
 
     func start() {
@@ -216,7 +225,7 @@ private final class EmbeddedSession {
         }
         timer?.tolerance = 0.025
         loadTask = Task { [weak self] in
-            guard let self else { return }
+            guard let self, !stopped, !Task.isCancelled else { return }
             do {
                 guard let raw = request["url"] as? String else { throw URLError(.badURL) }
                 let parts = raw.split(separator: "|", maxSplits: 1, omittingEmptySubsequences: false)
@@ -251,12 +260,13 @@ private final class EmbeddedSession {
                 let position = max(0, (request["position"] as? NSNumber)?.doubleValue ?? 0)
                 let startedAt = Date()
                 try await engine.load(url: url, startPosition: position, options: options)
-                guard !stopped else { return }
+                guard !stopped, !Task.isCancelled else { return }
                 NSLog("DexAetherBridge: video load completed in %.3f seconds", Date().timeIntervalSince(startedAt))
                 engine.setNativeSubtitleRendering(false)
                 if position == 0, let percent = request["percent"] as? NSNumber, percent.doubleValue > 0,
                    engine.duration.isFinite, engine.duration > 0 {
                     await engine.seek(to: engine.duration * min(100, percent.doubleValue) / 100)
+                    guard !stopped, !Task.isCancelled else { return }
                 }
                 var preferredSidecar: Int?
                 for subtitle in subtitles {
@@ -280,7 +290,7 @@ private final class EmbeddedSession {
         case "seek":
             seekTask?.cancel()
             seekTask = Task { [weak self] in
-                guard let self, !stopped else { return }
+                guard let self, !stopped, !Task.isCancelled else { return }
                 await engine.seek(to: max(0, value))
             }
         case "volume": engine.volume = Float(max(0, min(1, value)))
@@ -333,7 +343,9 @@ private final class EmbeddedSession {
         let time = sourceTime + subtitleDelay
         var cues: [SubtitleCue] = []
         var text: [[String: Any]] = []
-        for cue in engine.subtitleCues where cue.startTime <= time + 1 && cue.endTime > time - 1 {
+        for index in cueIndex.candidates(around: time) {
+            let cue = retainedCues[index]
+            guard cue.startTime <= time + 1 && cue.endTime > time - 1 else { continue }
             if time >= cue.startTime && time < cue.endTime { cues.append(cue) }
             if let value = cue.text { text.append(["text": value, "start": cue.startTime, "end": cue.endTime]) }
         }
@@ -389,6 +401,8 @@ private final class EmbeddedSession {
     func stop() {
         guard !stopped else { return }
         stopped = true
+        cueUpdates?.cancel()
+        cueUpdates = nil
         timer?.invalidate()
         loadTask?.cancel()
         seekTask?.cancel()

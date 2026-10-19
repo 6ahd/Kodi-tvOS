@@ -1,3 +1,76 @@
+2026-10-18 · 5.10.342 · Silo alerts in the skin panel (test build)
+- Merge the native unread Silo inbox into the actual skin Alerts panel and count.
+- Open and mark native alerts using the current profile's event, with durable receipts.
+- Read all covers local reminders and native Silo notifications using separate stores.
+- Publish changed inbox contents to an open panel without reloading unchanged data.
+- Preserve 341 Continue Watching fixes, 340 Silo support and 339 sync changes.
+
+2026-10-18 · 5.10.341 · Immediate Continue Watching updates (test build)
+- Publish manual progress edits to Home, widgets and open catalogs, bypassing player debounce.
+- Remove selected cards at once; fence old page results and refresh from saved state.
+- Refresh Following before remote deletion finishes; schedule normal sync for watched marks.
+- Preserve 340 Silo notifications/lists and all earlier 339 sync changes.
+- Mock/SQLite regression checks; live Kodi and account validation still required.
+
+2026-10-18 · 5.10.340 · Silo Apple contract adaptation (test build)
+- Silo v2 contract probe, cursor paging, profile-bound reads and sequenced session progress/stop.
+- Island Silo inbox/preferences and durable read outbox; watchlist/favorite/collection controls.
+- Silo sources for screensaver display/monitoring and clear focus markers in every layout.
+- Fix missing row-source refresh; preserve pause state and interrupted Silo playback position.
+- Fixture/schema checks only; live Kodi/server playback still needs device validation.
+
+2026-10-18 · 5.10.339 · Nuvio sync load and independent retries (test build)
+- Removed the extra history sync during playback. Existing push-only reports remain every 120 seconds and on pause/stop/end.
+- Skip and log library rows without a valid id, update the valid rows, and retain cached membership when a response contains damaged rows.
+- Retry failed sections independently, including Home, with persisted 5/10/20/30-minute backoff. Healthy sections keep their normal schedule; manual sync can retry immediately.
+- Upload watch-progress history in batches of at most 500. Failed batches do not delete the old progress keys.
+- Keeps 338's profile/session restoration, transactional library changes, progress acknowledgements and local library backups.
+- Local regression checks only; actual Kodi/tvOS and live-account validation still required.
+
+2026-10-18 · 5.10.338 · Nuvio sync reliability (test build)
+- Save progress during playback with a light background pass; keep full Home and library work for idle.
+- Retry failed sections and acknowledge captured changes independently per service; preserve edits made during requests.
+- Keep library add/remove changes transactionally per profile; re-adding cancels an unsent delete, and unrelated edits do not re-add titles removed on another device.
+- Retain cached library on malformed or incomplete pulls, rebuild missing cache, support type-specific IDs and all local rows.
+- Keep five nonempty local Nuvio library snapshots. Nuvio account page can add titles back from a saved snapshot; backups start with this build.
+- Restore the account before choosing its local profile when its token file is missing; avoid Home rebuilds for token backups; fully clear Trakt logout backups.
+- Verified with simulated sync/SQLite regressions; actual Kodi/tvOS and live Nuvio account testing still required.
+
+2026-10-18 · 5.10.337 · Nuvio sync and kept sign-ins
+- Nuvio progress: sent with Nuvio's own keys (id_sSeE) and times in milliseconds, so Nuvio's apps show what was watched here; rows sent the old way are moved once.
+- Nuvio library: titles are added with sync_push_library_items and removed with sync_delete_library_items; the old call replaced the whole account library with the titles saved here.
+- Sign-ins (Nuvio, Stremio, Trakt) kept in hidden settings and restored when their file is missing.
+
+2026-10-17 · 5.10.336 · Up next cards
+- Up next cards: the percentage sits at the end of the progress bar (no dark pill over the picture).
+
+2026-10-17 · 5.10.335 · Screensaver: TMDb lists off, Up next full screen
+- Screensaver sources: TMDb lists can be turned off (Show switch, or OK on the card: show, choose the lists, turn off); unticking every list keeps none instead of the defaults; with them off, TMDb's coming films and episodes leave the calendar too.
+- Up next style: the title's picture covers the whole screen with shades where text sits; Continue Watching cards are bigger with the logo, a percentage, a bar along the picture, the title and 'S1 · E4 · 18 min left' under it.
+
+2026-10-17 · 5.10.334 · Screensaver styles, sources page, island week, lighter skin
+- Lighter navigation in skin.dexhub: the full screen backdrop changes 0.3 s after the cursor rests (Menu > Look: Backdrop waits for the cursor); the trailer watcher writes its five properties only when they change; the trailer and ratings watchers read the focused card once per card (about half the calls into Kodi while browsing).
+- Clean trailer (on by default): the logo, title, genres and ratings fade while a trailer has the stage or the full screen, in the add-on's own Home under any skin and in skin.dexhub; any key brings them back.
+- Ratings shown: pick any of IMDb, TMDb, Rotten Tomatoes, Popcornmeter, Metacritic, Trakt, Letterboxd, MDBList, MyAnimeList (Control Centre > Metadata).
+- Screensaver styles: Cinema (source, progress and episode, the week strip, coming titles with Today / Tomorrow / In N days, a countdown, a slide timer), Spotlight (full backdrop, chips, progress, slide dots) and Up next (your next title, Continue Watching cards, your week).
+- Screensaver page: styles, sources with Show and Alerts switches and their title counts, TMDb lists as a source, add Trakt / MDBList / Home catalog, timing (slide time, order, clock, refresh, films or series), preview, on or off, refresh, alerts read.
+- Island week: watching time per day for the last 7 days (bars), titles, episodes and films finished; Saved rows show '6 of 8 episodes' with dots, and NEW EP or TONIGHT.
+
+2026-10-17 · Notification center and watching time
+- Internal notification center: All, New, Continue, Upcoming; read all and manage monitoring.
+- Elapsed / total / remaining playback time and progress for stopped and playing titles.
+- Notification detection timestamps, upcoming date cards, local airtime when supplied by the source.
+- Opening internal alerts also marks them read; existing monitoring and source settings preserved.
+- Arabic/English labels. Kodi/tvOS visual and remote testing still required.
+
+2026-10-17 · Personal screensaver sources and monitoring
+- Trakt/MDBList account lists, public URLs or numeric IDs, Home catalogs, Continue Watching and Favorites.
+- Independent display/monitor switches, personal-only screensaver, pause/resume per title.
+- Monitoring tab, source management and persistent read alerts; opening an alert marks it read.
+- Profile-scoped snapshots and alert state; atomic cache writes; existing stream-availability checks preserved.
+- Up to 8 sources and the first 100 items per source; large monitoring sets rotate within the existing request budget.
+- Live Kodi/tvOS and linked-account end-to-end testing is still required.
+
 5.10.331: Choosing a subtitle from a subtitle service in the player's subtitle page no longer opens the Home over the video: Kodi handled OK on that list itself, the pick now goes to Dex Hub. Pairs with skin 3.28.76.
 
 5.10.330: The power buttons leave the Menu (the Power icon in the side menu and the top bar opens the power menu). Pairs with skin 3.28.75.
