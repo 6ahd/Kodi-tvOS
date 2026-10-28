@@ -97,7 +97,8 @@ final class HomeModel: ObservableObject {
         for depth in 0..<4 {
             for row in rows where row.items.count > depth {
                 let item = row.items[depth]
-                if item.backdrop != nil, !picks.contains(where: { $0.id == item.id }) { picks.append(item) }
+                // Films and shows only: not collections, networks or people.
+                if !item.isFolder, item.backdrop != nil, !picks.contains(where: { $0.id == item.id }) { picks.append(item) }
                 if picks.count == 8 { return picks }
             }
         }
@@ -258,25 +259,29 @@ struct Shelf: View {
     var focused: FocusState<String?>.Binding
     let select: (MediaItem) -> Void
     @AppStorage(Look.logoCards) private var logoCards = true
+    @State private var chosen: ShelfStyle = .automatic
+
+    private var style: ShelfStyle {
+        chosen == .automatic ? ShelfStyle.guess(title: row.title, items: row.items, logoCards: logoCards) : chosen
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(row.title).font(.system(size: 32, weight: .bold)).padding(.horizontal, 80)
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 48) {
-                    ForEach(row.items) { item in
-                        Button { select(item) } label: {
-                            if row.resumes || (logoCards && !row.posters) {
-                                LogoCard(item: item)
-                            } else if row.posters {
-                                PosterCard(item: item)
-                            } else {
-                                LandscapeCard(title: item.title, subtitle: item.metadata.joined(separator: " · "),
-                                              image: item.landscape ?? item.poster, progress: item.progress)
+                LazyHStack(alignment: .top, spacing: style == .ranked ? 24 : 48) {
+                    ForEach(Array(row.items.enumerated()), id: \.element.id) { index, item in
+                        Button { select(item) } label: { card(item, index: index) }
+                            .buttonStyle(CardButtonStyle())
+                            .focused(focused, equals: item.id)
+                            .contextMenu {
+                                Picker("Row style", selection: Binding(get: { chosen }, set: { value in
+                                    chosen = value
+                                    ShelfStyle.choose(value, for: row.title)
+                                })) {
+                                    ForEach(ShelfStyle.allCases) { Text($0.name).tag($0) }
+                                }
                             }
-                        }
-                        .buttonStyle(CardButtonStyle())
-                        .focused(focused, equals: item.id)
                     }
                 }
                 .padding(.horizontal, 80)
@@ -284,6 +289,20 @@ struct Shelf: View {
             }
             .scrollClipDisabled()
             .focusSection()
+        }
+        .onAppear { chosen = ShelfStyle.chosen(for: row.title) }
+    }
+
+    @ViewBuilder private func card(_ item: MediaItem, index: Int) -> some View {
+        switch style {
+        case .posters, .automatic: PosterCard(item: item)
+        case .wide: LogoCard(item: item)
+        case .feature: FeatureCard(item: item)
+        case .ranked: RankedCard(item: item, rank: index + 1)
+        case .collections: CollectionTile(item: item)
+        case .logos: LogoTile(item: item)
+        case .people: PersonTile(item: item)
+        case .circles: PersonTile(item: item, round: true)
         }
     }
 }
@@ -419,6 +438,10 @@ struct DetailsScreen: View {
                     .padding(.horizontal, 80)
                     .focusSection()
 
+                    if !item.isFolder {
+                        SourcesSection(kodi: kodi, item: item)
+                    }
+
                     if !item.cast.isEmpty {
                         VStack(alignment: .leading, spacing: 24) {
                             Text("Cast & Crew").font(.system(size: 32, weight: .bold)).padding(.horizontal, 80)
@@ -441,6 +464,76 @@ struct DetailsScreen: View {
             .scrollClipDisabled()
         }
         .toolbar(.hidden, for: .tabBar)
+    }
+}
+
+/// "Sources  [All 24] [4K 6] [1080p 12] [Others 6]": every Stremio-style
+/// add-on set up in Dex Hub, asked at once; the best source carries a crown.
+struct SourcesSection: View {
+    @ObservedObject var kodi: Kodi
+    let item: MediaItem
+    @StateObject private var search = SourceSearch()
+    @State private var filter = "All"
+
+    private var groups: [(name: String, count: Int)] {
+        let all = search.sources
+        return [("All", all.count), ("4K", all.filter { $0.resolution == "4K" }.count),
+                ("1080p", all.filter { $0.resolution == "1080p" }.count),
+                ("Others", all.filter { $0.rank < 3 }.count)].filter { $0.count > 0 || $0.name == "All" }
+    }
+
+    private var shown: [StreamSource] {
+        switch filter {
+        case "4K": search.sources.filter { $0.resolution == "4K" }
+        case "1080p": search.sources.filter { $0.resolution == "1080p" }
+        case "Others": search.sources.filter { $0.rank < 3 }
+        default: search.sources
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(spacing: 20) {
+                Text("Sources").font(.system(size: 32, weight: .bold))
+                if search.searching {
+                    ProgressView()
+                    Text("\(search.answered) of \(search.asked) add-ons").font(.system(size: 20)).foregroundStyle(Theme.secondary)
+                }
+            }
+            .padding(.horizontal, 80)
+            if search.sources.isEmpty {
+                if let message = search.message {
+                    Text(message).font(.system(size: 22)).foregroundStyle(Theme.secondary).padding(.horizontal, 80)
+                }
+            } else {
+                HStack(spacing: 16) {
+                    ForEach(groups, id: \.name) { group in
+                        Button { filter = group.name } label: {
+                            Text("\(group.name)  \(group.count)").font(.system(size: 20, weight: .semibold)).padding(.horizontal, 6)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(filter == group.name ? .white : nil)
+                    }
+                }
+                .padding(.horizontal, 80)
+                .focusSection()
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 36) {
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, source in
+                            Button { kodi.play(source: source, for: item) } label: {
+                                SourceCard(source: source, best: index == 0 && filter == "All")
+                            }
+                            .buttonStyle(CardButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 80)
+                    .padding(.vertical, 24)
+                }
+                .scrollClipDisabled()
+                .focusSection()
+            }
+        }
+        .task(id: item.id) { await search.search(item) }
     }
 }
 

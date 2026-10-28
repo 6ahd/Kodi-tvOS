@@ -28,6 +28,9 @@ struct MediaItem: Identifiable, Hashable {
     let badges: [String]
     /// Seconds left, for Continue Watching.
     let remaining: Int
+    /// The IMDb ID Stremio add-ons look sources up by (the show's, for an episode).
+    let imdbID: String?
+    var isEpisode: Bool { season >= 0 && episode >= 0 && (type == "episode" || !showTitle.isEmpty) }
 
     var poster: URL? { art["poster"] ?? art["tvshow.poster"] ?? art["thumb"] ?? art["icon"] }
     var backdrop: URL? { art["fanart"] ?? art["tvshow.fanart"] ?? art["landscape"] ?? art["thumb"] }
@@ -48,6 +51,23 @@ struct MediaItem: Identifiable, Hashable {
         if year > 0 { parts.append(String(year)) }
         if runtime > 0 { parts.append(runtime >= 3600 ? "\(runtime / 3600)h \(runtime % 3600 / 60)m" : "\(runtime / 60)m") }
         return parts
+    }
+
+    /// Add-ons put the IMDb ID in different places: the item's unique IDs, a
+    /// list item property, or the plugin URL. An episode needs its show's.
+    static func imdb(_ row: [String: Any], episode: Bool) -> String? {
+        let valid = { (value: String) -> String? in value.range(of: #"^tt\d{6,}$"#, options: .regularExpression) != nil ? value : nil }
+        let properties = row["customproperties"] as? [String: Any] ?? [:]
+        let unique = row["uniqueid"] as? [String: Any] ?? [:]
+        let showKeys = properties.filter { $0.key.lowercased().contains("imdb") && $0.key.lowercased().contains("show") }
+        let anyKeys = properties.filter { $0.key.lowercased().contains("imdb") }
+        let fromURL = (row["file"] as? String).flatMap { file -> String? in
+            file.range(of: #"tt\d{6,}"#, options: .regularExpression).map { String(file[$0]) }
+        }
+        let ordered: [String?] = episode
+            ? showKeys.values.map { $0 as? String } + [fromURL] + anyKeys.values.map { $0 as? String } + [unique["imdb"] as? String]
+            : [unique["imdb"] as? String] + anyKeys.values.map { $0 as? String } + [fromURL]
+        return ordered.compactMap { $0.flatMap(valid) }.first
     }
 
     /// Quality labels in the order Apple's TV app shows them.
@@ -108,6 +128,7 @@ struct MediaItem: Identifiable, Hashable {
         premiered = row["premiered"] as? String ?? ""
         trailer = row["trailer"] as? String ?? ""
         badges = Self.badges(row["streamdetails"] as? [String: Any] ?? [:])
+        imdbID = Self.imdb(row, episode: (row["season"] as? Int ?? -1) >= 0 && (row["episode"] as? Int ?? -1) >= 0)
         var art: [String: URL] = [:]
         for (key, value) in row["art"] as? [String: String] ?? [:] {
             if let url = Kodi.imageURL(value) { art[key] = url }
@@ -172,7 +193,7 @@ final class Kodi: ObservableObject {
     // Every name must be in Kodi's List.Fields.Files, or the whole request fails.
     static let fields = ["title", "art", "plot", "year", "rating", "runtime", "genre", "showtitle",
                          "season", "episode", "thumbnail", "fanart", "resume", "cast", "director",
-                         "tagline", "mpaa", "premiered", "trailer", "streamdetails"]
+                         "tagline", "mpaa", "premiered", "trailer", "streamdetails", "uniqueid", "customproperties"]
 
     func directory(_ path: String) async throws -> [MediaItem] {
         let result = try await call("Files.GetDirectory", ["directory": path, "media": "video", "properties": Self.fields])
@@ -188,6 +209,11 @@ final class Kodi: ObservableObject {
                          icon: Self.imageURL(row["thumbnail"] as? String ?? ""),
                          backdrop: Self.imageURL(row["fanart"] as? String ?? ""))
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    /// A source found by the native screens, played by Kodi (Aether).
+    func play(source: StreamSource, for item: MediaItem) {
+        Task { _ = try? await call("Player.Open", ["item": ["file": source.kodiPath]]) }
     }
 
     func playTrailer(_ file: String) {

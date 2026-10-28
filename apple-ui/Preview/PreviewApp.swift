@@ -5,6 +5,8 @@ import SwiftUI
 struct PreviewApp: App {
     @StateObject private var kodi = Kodi(rpc: SampleKodi.reply, command: { print("command:", $0) })
 
+    init() { SampleSources.install() }
+
     var body: some Scene {
         WindowGroup { RootView(kodi: kodi) }
     }
@@ -36,11 +38,25 @@ enum SampleKodi {
 
     static func directory(_ path: String) -> [[String: Any]] {
         if path.hasSuffix("/") {
-            return ["Continue Watching", "Trending Movies", "Popular Shows", "New Episodes", "Search"].map {
+            return ["Continue Watching", "Movies of the Week", "Top 10 Arabic Series", "Collections", "Streaming Services",
+                    "Actors", "Trending Movies", "Popular Shows", "Search"].map {
                 ["label": $0, "file": path + $0.replacingOccurrences(of: " ", with: "_"), "filetype": "directory"]
             }
         }
-        let shows = path.contains("Shows") || path.contains("Episodes") || path.contains("Continue")
+        if path.contains("Collections") || path.contains("Streaming") || path.contains("Actors") {
+            let names = path.contains("Collections") ? ["Discover Family", "Studio Spotlight", "Mind-Bending", "Cozy & Comforting"]
+                : path.contains("Streaming") ? ["NETFLIX", "prime video", "hulu", "Apple TV", "HBO"]
+                : ["Lena Ortiz", "Tomas Reyes", "Hana Sato", "Idris Cole", "Noor Haddad"]
+            return names.enumerated().map { index, name in
+                var art: [String: String] = [:]
+                if path.contains("Collections") { art["fanart"] = SampleArt.file(name, kind: .backdrop, index: index + 2) }
+                if path.contains("Streaming") { art["clearlogo"] = SampleArt.file(name, kind: .logo, index: index) }
+                if path.contains("Actors") { art["thumb"] = SampleArt.file(name, kind: .poster, index: index + 1) }
+                return ["label": name, "title": name, "file": path + "/\(index)", "filetype": "directory", "art": art,
+                        "plot": path.contains("Collections") ? "Curated picks for every age" : ""]
+            }
+        }
+        let shows = path.contains("Shows") || path.contains("Episodes") || path.contains("Continue") || path.contains("Series")
         let names = shows
             ? ["Salt & Ash", "The Northern Line", "Paper Kings", "Night Ferry", "Glasshouse", "Low Orbit", "Signal Box", "Blue Hour"]
             : ["Deadfall", "Clayborne", "Hollow Out", "Masterline", "The Fixer", "Animals", "Red Room", "Iceman", "Runway 9", "Whalefall"]
@@ -52,6 +68,7 @@ enum SampleKodi {
                 "rating": 7.1 + Double(index % 3) / 2, "mpaa": index % 2 == 0 ? "16+" : "13+",
                 "tagline": "Every answer has a price.", "director": ["Mira Hanssen"],
                 "trailer": "plugin://sample/trailer/\(index)",
+                "uniqueid": ["imdb": "tt10000\(10 + index)"],
                 "cast": ["Lena Ortiz", "Tomas Reyes", "Hana Sato", "Idris Cole", "Noor Haddad", "Elias Berg"].enumerated().map { i, person in
                     ["name": person, "role": i == 0 ? "Inspector Vale" : "Role \(i + 1)"]
                 },
@@ -117,4 +134,47 @@ enum SampleArt {
         }
         return url.path
     }
+}
+
+/// A pretend Stremio add-on answering inside the preview, so the Sources
+/// section can be tried without the network.
+final class SampleSources: URLProtocol {
+    static func install() {
+        URLProtocol.registerClass(SampleSources.self)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("dexhub-sample/profiles/local")
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let providers: [[String: Any]] = [
+            ["id": "a", "name": "Torrentio RD", "manifest_url": "https://sample.addon/a/manifest.json",
+             "manifest": ["resources": ["stream"], "types": ["movie", "series"], "idPrefixes": ["tt"]]],
+            ["id": "b", "name": "DexEmby", "manifest_url": "https://sample.addon/b/manifest.json",
+             "manifest": ["resources": ["stream"], "types": ["movie", "series"]]]
+        ]
+        try? JSONSerialization.data(withJSONObject: providers).write(to: folder.appendingPathComponent("providers.json"))
+        UserDefaults.standard.set(folder.deletingLastPathComponent().deletingLastPathComponent().path, forKey: "DexAppleDexHubData")
+    }
+
+    override class func canInit(with request: URLRequest) -> Bool { request.url?.host == "sample.addon" }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        let first = request.url?.path.hasPrefix("/a/") ?? false
+        let streams: [[String: Any]] = first ? [
+            ["name": "Torrentio\n4K", "title": "Salt.and.Ash.2160p.WEB-DL.DV.HDR10+.Atmos.DDP5.1\n💾 18.4 GB ⚡", "url": "https://cdn.sample/1.mkv"],
+            ["name": "Torrentio\n1080p", "title": "Salt.and.Ash.1080p.WEB.H264.DDP5.1\n💾 4.1 GB ⚡", "url": "https://cdn.sample/2.mkv"],
+            ["name": "Torrentio\n720p", "title": "Salt.and.Ash.720p.WEB\n💾 1.2 GB", "url": "https://cdn.sample/3.mkv"]
+        ] : [
+            ["name": "DexEmby 4K", "title": "Remux 2160p Dolby Vision TrueHD Atmos 7.1", "url": "https://emby.sample/4.mkv",
+             "behaviorHints": ["filename": "Salt and Ash (2026) Remux-2160p.mkv", "videoSize": 61_000_000_000.0]],
+            ["name": "DexEmby 1080p", "title": "1080p DTS-HD MA 5.1 16.8 GB", "url": "https://emby.sample/5.mkv"]
+        ]
+        let data = try! JSONSerialization.data(withJSONObject: ["streams": streams])
+        let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+        DispatchQueue.global().asyncAfter(deadline: .now() + (first ? 0.6 : 1.2)) {
+            self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            self.client?.urlProtocol(self, didLoad: data)
+            self.client?.urlProtocolDidFinishLoading(self)
+        }
+    }
+
+    override func stopLoading() {}
 }

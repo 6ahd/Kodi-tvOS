@@ -1590,14 +1590,15 @@ index 0000000..0251c43
 +};
 diff --git a/xbmc/platform/darwin/tvos/TVOSAppleMode.mm b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
 new file mode 100644
-index 0000000..06744da
+index 0000000..64baa54
 --- /dev/null
 +++ b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,172 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "TVOSAppleMode.h"
 +
 +#include "ServiceBroker.h"
++#include "filesystem/SpecialProtocol.h"
 +#include "application/ApplicationComponents.h"
 +#include "application/ApplicationPlayer.h"
 +#include "guilib/GUIComponent.h"
@@ -1676,6 +1677,14 @@ index 0000000..06744da
 +    const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
 +    const bool needed = modal || (player && player->IsPlaying());
 +    const bool becameReady = home && !ready.exchange(true);
++    if (becameReady)
++    {
++      // Where Dex Hub keeps its source add-ons (providers.json), for the
++      // native Sources section; Kodi's folders are known only once it runs.
++      const std::string data =
++          CSpecialProtocol::TranslatePath("special://profile/addon_data/plugin.video.dexhub.tvos/");
++      [NSUserDefaults.standardUserDefaults setObject:@(data.c_str()) forKey:@"DexAppleDexHubData"];
++    }
 +    if (becameReady || needed != kodiNeeded.exchange(needed))
 +      dispatch_async(dispatch_get_main_queue(), ^{ Apply(); });
 +  }

@@ -234,3 +234,204 @@ struct Badges: View {
         }
     }
 }
+
+// MARK: Row shapes
+
+/// How a Home row draws its items. Automatic picks from the row's title and
+/// artwork; a long press on any card in the row sets it by hand.
+enum ShelfStyle: String, CaseIterable, Identifiable {
+    case automatic, posters, wide, feature, ranked, collections, logos, people, circles
+    var id: String { rawValue }
+    var name: String {
+        switch self {
+        case .automatic: "Automatic"
+        case .posters: "Posters"
+        case .wide: "Wide with logos"
+        case .feature: "Large feature"
+        case .ranked: "Top 10"
+        case .collections: "Collections"
+        case .logos: "Logos (networks)"
+        case .people: "People"
+        case .circles: "Circles"
+        }
+    }
+
+    static let storeKey = "DexRowStyles"
+
+    static func chosen(for row: String) -> ShelfStyle {
+        let saved = UserDefaults.standard.dictionary(forKey: storeKey) as? [String: String] ?? [:]
+        return saved[row].flatMap(ShelfStyle.init) ?? .automatic
+    }
+
+    static func choose(_ style: ShelfStyle, for row: String) {
+        var saved = UserDefaults.standard.dictionary(forKey: storeKey) as? [String: String] ?? [:]
+        saved[row] = style == .automatic ? nil : style.rawValue
+        UserDefaults.standard.set(saved, forKey: storeKey)
+    }
+
+    /// The automatic choice: the row's title first, then what its artwork allows.
+    static func guess(title: String, items: [MediaItem], logoCards: Bool) -> ShelfStyle {
+        let name = title.lowercased()
+        let has = { (words: [String]) in words.contains { name.contains($0) } }
+        let share = { (test: (MediaItem) -> Bool) in items.filter(test).count * 2 >= max(1, items.count) }
+        if share({ $0.progress > 0.01 }) { return .wide }
+        if has(["top 10", "top10", "top ", "أعلى", "الأكثر", "الأفضل"]) { return .ranked }
+        if has(["of the week", "featured", "spotlight", "الأسبوع", "مميز", "المختار"]) { return .feature }
+        if has(["network", "studio", "service", "channel", "provider", "الشبكات", "شبكات", "خدمات", "استوديو", "القنوات"]) { return .logos }
+        if has(["actor", "actress", "director", "people", "cast", "stars", "الممثل", "المخرج", "الجهات الفاعلة", "نجوم", "المدراء"]) { return .people }
+        if share({ $0.isFolder }) {
+            if share({ $0.art["fanart"] != nil || $0.art["landscape"] != nil }) { return .collections }
+            if share({ $0.poster == nil || $0.art["poster"] == nil }) { return .logos }
+        }
+        if share(\.hasPoster) { return .posters }
+        return logoCards ? .wide : .collections
+    }
+}
+
+/// "Movies of the week": one big scene with the title's logo and facts.
+struct FeatureCard: View {
+    let item: MediaItem
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Artwork(url: item.backdrop ?? item.landscape ?? item.poster) { TitleTile(title: item.title, size: 44) }
+                .frame(width: 980, height: 551)
+            LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 14) {
+                ClearLogo(item: item, height: 130)
+                Text(item.metadata.joined(separator: " · ")).font(.system(size: 22, weight: .medium)).foregroundStyle(.white.opacity(0.85))
+            }
+            .padding(32)
+        }
+        .frame(width: 980, height: 551)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .hoverEffect(.highlight)
+    }
+}
+
+/// Top 10: the rank set large beside the poster.
+struct RankedCard: View {
+    let item: MediaItem
+    let rank: Int
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: -28) {
+            Text("\(rank)")
+                .font(.system(size: 200, weight: .black))
+                .foregroundStyle(.white.opacity(0.92))
+                .shadow(color: .black.opacity(0.6), radius: 12)
+                .frame(width: rank >= 10 ? 210 : 120, alignment: .trailing)
+                .offset(y: 30)
+            PosterCard(item: item)
+        }
+    }
+}
+
+/// A collection or genre: wide art with its name across it.
+struct CollectionTile: View {
+    let item: MediaItem
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Artwork(url: item.landscape ?? item.backdrop ?? item.poster) { TitleTile(title: "", size: 10) }
+                .frame(width: 560, height: 315)
+            LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(item.title.uppercased()).font(.system(size: 34, weight: .black)).tracking(1).lineLimit(1).minimumScaleFactor(0.6)
+                if !item.plot.isEmpty {
+                    Text(item.plot.uppercased()).font(.system(size: 15, weight: .semibold)).tracking(0.8)
+                        .foregroundStyle(.white.opacity(0.8)).lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 24).padding(.bottom, 22)
+            .overlay(alignment: .leading) { Rectangle().fill(.white.opacity(0.85)).frame(width: 3).padding(.vertical, 22) }
+        }
+        .frame(width: 560, height: 315)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .hoverEffect(.highlight)
+    }
+}
+
+/// A network or streaming service: its logo on a dark tile.
+struct LogoTile: View {
+    let item: MediaItem
+
+    var body: some View {
+        ZStack {
+            Theme.tint(for: item.title).opacity(0.35)
+            Artwork(url: item.backdrop) { Color.black.opacity(0.6) }
+                .opacity(0.35)
+            Artwork(url: item.clearLogo ?? item.art["icon"] ?? item.art["thumb"] ?? item.poster, mode: .fit) {
+                Text(item.title).font(.system(size: 38, weight: .heavy)).multilineTextAlignment(.center).padding()
+            }
+            .padding(48)
+        }
+        .frame(width: 400, height: 225)
+        .background(Color.black)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .hoverEffect(.highlight)
+    }
+}
+
+/// An actor or director: a portrait photo with the name below.
+struct PersonTile: View {
+    let item: MediaItem
+    var round = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Artwork(url: item.art["thumb"] ?? item.poster ?? item.art["icon"]) {
+                ZStack {
+                    Theme.tint(for: item.title)
+                    Text(String(item.title.prefix(1))).font(.system(size: 70, weight: .heavy))
+                }
+            }
+            .frame(width: round ? 220 : 240, height: round ? 220 : 330)
+            .clipShape(round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: 18, style: .continuous)))
+            .contentShape(.hoverEffect, round ? AnyShape(Circle()) : AnyShape(RoundedRectangle(cornerRadius: 18, style: .continuous)))
+            .hoverEffect(.highlight)
+            FocusLabel(text: item.title).frame(width: 240)
+        }
+    }
+}
+
+// MARK: Sources
+
+/// One source in the details page: add-on, quality, sound and size.
+struct SourceCard: View {
+    let source: StreamSource
+    let best: Bool
+    @Environment(\.isFocused) private var focused
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 14) {
+                Artwork(url: source.provider.logo, mode: .fit) {
+                    Image(systemName: "play.rectangle.fill").font(.system(size: 30))
+                }
+                .frame(width: 46, height: 46)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                Text(source.provider.name).font(.system(size: 22, weight: .semibold)).lineLimit(1)
+                Spacer()
+                if source.cached { Image(systemName: "bolt.fill").foregroundStyle(.yellow) }
+                if best { Image(systemName: "crown.fill").foregroundStyle(Color(red: 0.98, green: 0.78, blue: 0.2)) }
+            }
+            HStack(spacing: 12) {
+                Text(source.resolution).font(.system(size: 34, weight: .heavy))
+                Badges(labels: source.badges)
+            }
+            Text(source.detail.isEmpty ? source.name : source.detail)
+                .font(.system(size: 18)).foregroundStyle(.white.opacity(0.7)).lineLimit(2)
+            if !source.size.isEmpty {
+                Label(source.size, systemImage: "film").font(.system(size: 20, weight: .medium)).foregroundStyle(.white.opacity(0.85))
+            }
+        }
+        .padding(26)
+        .frame(width: 560, height: 270, alignment: .topLeading)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(.white.opacity(focused ? 0.9 : 0.18), lineWidth: focused ? 3 : 1))
+        .scaleEffect(focused ? 1.06 : 1)
+        .shadow(color: .black.opacity(focused ? 0.5 : 0), radius: 24, y: 12)
+        .animation(.easeOut(duration: 0.18), value: focused)
+    }
+}
