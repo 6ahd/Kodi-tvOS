@@ -1,0 +1,3337 @@
+diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
+index 14f70f9..dba8300 100644
+--- a/addons/resource.language.en_gb/resources/strings.po
++++ b/addons/resource.language.en_gb/resources/strings.po
+@@ -25795,3 +25795,77 @@ msgstr ""
+ msgctxt "#40804"
+ msgid "{0:.1f} dB"
+ msgstr ""
++
++
++msgctxt "#49990"
++msgid "Preferred player / المشغل المفضل"
++msgstr ""
++
++
++msgctxt "#49991"
++msgid "Kodi"
++msgstr ""
++
++
++msgctxt "#49992"
++msgid "Aether"
++msgstr ""
++
++
++msgctxt "#49993"
++msgid "External / خارجي"
++msgstr ""
++
++
++msgctxt "#49994"
++msgid "External player / المشغل الخارجي"
++msgstr ""
++
++
++msgctxt "#49995"
++msgid "Infuse"
++msgstr ""
++
++
++msgctxt "#49996"
++msgid "VidHub"
++msgstr ""
++
++
++
++
++
++
++msgctxt "#49999"
++msgid "Aether Atmos and DTS:X speakers / توزيع سماعات Atmos وDTS:X"
++msgstr ""
++
++
++msgctxt "#50000"
++msgid "Off (E-AC-3 Atmos remains automatic)"
++msgstr ""
++
++
++msgctxt "#50001"
++msgid "5.1.2"
++msgstr ""
++
++
++msgctxt "#50002"
++msgid "5.1.4"
++msgstr ""
++
++
++msgctxt "#50003"
++msgid "7.1.2"
++msgstr ""
++
++
++msgctxt "#50004"
++msgid "7.1.4"
++msgstr ""
++
++
++msgctxt "#50005"
++msgid "9.1.6"
++msgstr ""
+diff --git a/system/settings/darwin_tvos.xml b/system/settings/darwin_tvos.xml
+index 13e821f..0cd7461 100644
+--- a/system/settings/darwin_tvos.xml
++++ b/system/settings/darwin_tvos.xml
+@@ -87,6 +87,35 @@
+   </section>
+   <section id="player">
+     <category id="videoplayer">
++      <group id="8">
++        <setting id="videoplayer.dexhubtruehdatmos" type="integer" label="49999">
++          <level>0</level><default>4</default>
++          <constraints><options>
++            <option label="50000">0</option><option label="50001">1</option>
++            <option label="50002">2</option><option label="50003">3</option>
++            <option label="50004">4</option><option label="50005">5</option>
++          </options></constraints>
++          <control type="list" format="integer" />
++        </setting>
++      </group>
++      <group id="9"><setting id="videoplayer.dexhubnativeversion" type="integer">
++        <level>4</level><default>21</default>
++        <control type="edit" format="integer" />
++      </setting></group>
++      <group id="1">
++        <setting id="videoplayer.dexhubengine" type="integer" label="49990">
++          <level>0</level><default>1</default>
++          <constraints><options>
++            <option label="49991">0</option><option label="49992">1</option><option label="49993">2</option>
++          </options></constraints>
++          <control type="list" format="integer" />
++        </setting>
++        <setting id="videoplayer.dexhubexternal" type="integer" label="49994">
++          <level>0</level><default>0</default>
++          <constraints><options><option label="49995">0</option><option label="49996">1</option></options></constraints>
++          <control type="list" format="integer" />
++        </setting>
++      </group>
+       <group id="3">
+         <setting id="videoplayer.hqscalers">
+           <visible>false</visible>
+diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
+index ba0c047..25a4073 100644
+--- a/xbmc/ServiceManager.cpp
++++ b/xbmc/ServiceManager.cpp
+@@ -7,6 +7,9 @@
+  */
+ 
+ #include "ServiceManager.h"
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSDexHubSetup.h"
++#endif
+ 
+ #include "ContextMenuManager.h"
+ #include "DatabaseManager.h"
+@@ -128,6 +131,9 @@ bool CServiceManager::InitStageOne()
+ 
+ bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
+ {
++#if defined(TARGET_DARWIN_TVOS)
++  PrepareDexHubBundle();
++#endif
+ #ifdef HAS_PYTHON
+   // checked here rather than at construction so the failure reaches kodi.log
+   if (!m_XBPython->BindingModulesLoaded())
+@@ -159,6 +165,10 @@ bool CServiceManager::InitStageTwo(const std::string& profilesUserDataFolder)
+     return false;
+   }
+ 
++#if defined(TARGET_DARWIN_TVOS)
++  ActivateDexHubBundle(*m_addonMgr);
++#endif
++
+   m_repositoryUpdater = std::make_unique<ADDON::CRepositoryUpdater>(*m_addonMgr);
+ 
+   m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
+diff --git a/xbmc/application/Application.cpp b/xbmc/application/Application.cpp
+index 7362719..5b502c7 100644
+--- a/xbmc/application/Application.cpp
++++ b/xbmc/application/Application.cpp
+@@ -7,6 +7,13 @@
+  */
+ 
+ #include "Application.h"
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSNativeSkin.h"
++#endif
++
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSDexHubSetup.h"
++#endif
+ 
+ #include "Autorun.h"
+ #include "CompileInfo.h"
+@@ -458,7 +465,14 @@ bool CApplication::CreateGUI()
+ 
+   // Retrieve the matching resolution based on GUI settings
+   bool sav_res = false;
++#if defined(TARGET_DARWIN_TVOS)
++  // DexHub GUI desktop mode v20.
++  if (CDisplaySettings::GetInstance().GetDisplayResolution() != RES_DESKTOP)
++    sav_res = true;
++  CDisplaySettings::GetInstance().SetCurrentResolution(RES_DESKTOP);
++#else
+   CDisplaySettings::GetInstance().SetCurrentResolution(CDisplaySettings::GetInstance().GetDisplayResolution());
++#endif
+   CLog::Log(LOGINFO, "Checking resolution {}",
+             CDisplaySettings::GetInstance().GetCurrentResolution());
+   if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
+@@ -726,6 +740,9 @@ bool CApplication::Initialize()
+     }
+ 
+     CServiceBroker::RegisterTextureCache(std::make_shared<CTextureCache>());
++#if defined(TARGET_DARWIN_TVOS)
++    ConfigureDexHubSkin();
++#endif
+ 
+     std::string skinId = settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN);
+     if (!skinHandling->LoadSkin(skinId))
+@@ -936,6 +953,12 @@ void CApplication::Render()
+     m_lastRenderTime = std::chrono::steady_clock::now();
+   }
+ 
++#if defined(TARGET_DARWIN_TVOS)
++  // Native presentation replaces drawing, never Kodi's window-close lifecycle.
++  if (!guiWillRender && CTVOSNativeSkin::IsVisible())
++    CServiceBroker::GetGUI()->GetWindowManager().AfterRender();
++#endif
++
+   if (compositing)
+     CServiceBroker::GetWinSystem()->EndGuiComposite();
+ 
+@@ -972,6 +995,11 @@ void CApplication::Render()
+   CServiceBroker::GetWinSystem()->GetGfxContext().Flip(hasRendered,
+                                                        appPlayer->IsRenderingVideoLayer());
+ 
++#if defined(TARGET_DARWIN_TVOS)
++  // DexHub idle frame pacing v21.
++  if (!hasRendered && appPlayer->GetCurrentPlayer() == "Aether")
++    KODI::TIME::Sleep(std::chrono::milliseconds(16));
++#endif
+   CTimeUtils::UpdateFrameTime(hasRendered);
+ }
+ 
+@@ -1631,6 +1659,14 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
+         !CServiceBroker::GetGUI()->GetWindowManager().HasDirtyRegions())
+       m_skipGuiRender = true;
+     CServiceBroker::GetGUI()->GetWindowManager().FrameMove();
++#if defined(TARGET_DARWIN_TVOS)
++    // Continue processing Kodi windows and Python callbacks. UIKit draws only
++    // opted-in controls; routing and playback remain in Kodi.
++    if (CTVOSNativeSkin::FrameMove())
++      m_skipGuiRender = true;
++    else if (CTVOSNativeSkin::ShouldRenderVideo())
++      m_skipGuiRender = false;
++#endif
+   }
+ 
+   appPlayer->FrameMove();
+diff --git a/xbmc/application/ApplicationPlayer.cpp b/xbmc/application/ApplicationPlayer.cpp
+index 2938369..8201277 100644
+--- a/xbmc/application/ApplicationPlayer.cpp
++++ b/xbmc/application/ApplicationPlayer.cpp
+@@ -96,6 +96,28 @@ bool CApplicationPlayer::OpenFile(const CFileItem& item, const CPlayerOptions& o
+     newPlayer = playerName;
+   else
+     newPlayer = factory.GetDefaultPlayer(item);
++#if defined(TARGET_DARWIN_TVOS)
++  const std::string dexCore = item.GetProperty("dexhub.playercore").asString();
++  if (playerName.empty() && (dexCore == "VideoPlayer" || dexCore == "Aether" || dexCore == "Infuse" || dexCore == "VidHub" || dexCore == "SenPlayer" || dexCore == "VLC" || dexCore == "Native Player" || dexCore == "Outplayer" || dexCore == "nPlayer"))
++    newPlayer = dexCore;
++  if ((newPlayer == "Infuse" || newPlayer == "VidHub" || newPlayer == "SenPlayer" || newPlayer == "VLC" || newPlayer == "Native Player" || newPlayer == "Outplayer" || newPlayer == "nPlayer") &&
++      ((!item.GetDynPath().starts_with("http://") && !item.GetDynPath().starts_with("https://")) ||
++       item.GetDynPath().find('|') != std::string::npos))
++    newPlayer = "VideoPlayer";
++  if (newPlayer == "Aether" && !item.GetDynPath().starts_with("http://") &&
++      !item.GetDynPath().starts_with("https://") && !item.GetDynPath().starts_with("file://") &&
++      !item.GetDynPath().starts_with("/"))
++    newPlayer = "VideoPlayer";
++#endif
++#if defined(TARGET_DARWIN_TVOS)
++  // DexHub trailers stay internal.
++  const std::string trailerPath = item.GetDynPath();
++  if (item.GetProperty("dexhub.trailer").asString() == "1" ||
++      trailerPath.find("imdb-video.media-imdb.com/") != std::string::npos ||
++      trailerPath.find("trailers.apple.com/") != std::string::npos)
++    newPlayer = "VideoPlayer";
++#endif
++
+ 
+   // check if we need to close current player
+   // VideoPlayer can open a new file while playing
+diff --git a/xbmc/cores/playercorefactory/PlayerCoreConfig.cpp b/xbmc/cores/playercorefactory/PlayerCoreConfig.cpp
+index 69f3c6f..248ad00 100644
+--- a/xbmc/cores/playercorefactory/PlayerCoreConfig.cpp
++++ b/xbmc/cores/playercorefactory/PlayerCoreConfig.cpp
+@@ -7,6 +7,9 @@
+  */
+ 
+ #include "PlayerCoreConfig.h"
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSAetherPlayer.h"
++#endif
+ 
+ #include "cores/ExternalPlayer/ExternalPlayer.h"
+ #include "cores/IPlayer.h"
+@@ -49,7 +52,12 @@ std::shared_ptr<IPlayer> CPlayerCoreConfig::CreatePlayer(IPlayerCallback& callba
+ 
+   if (m_type.compare("video") == 0)
+   {
+-#ifdef TARGET_WEBOS
++#if defined(TARGET_DARWIN_TVOS)
++    if (m_name == "Aether" || m_name == "Infuse" || m_name == "VidHub" || m_name == "SenPlayer" || m_name == "VLC" || m_name == "Native Player" || m_name == "Outplayer" || m_name == "nPlayer")
++      player = std::make_shared<CTVOSAetherPlayer>(callback);
++    else
++      player = std::make_shared<CVideoPlayer>(callback);
++#elif defined(TARGET_WEBOS)
+     player = std::make_shared<CVideoPlayerWebOS>(callback);
+ #else
+     player = std::make_shared<CVideoPlayer>(callback);
+diff --git a/xbmc/cores/playercorefactory/PlayerCoreFactory.cpp b/xbmc/cores/playercorefactory/PlayerCoreFactory.cpp
+index e7a672a..a42dcae 100644
+--- a/xbmc/cores/playercorefactory/PlayerCoreFactory.cpp
++++ b/xbmc/cores/playercorefactory/PlayerCoreFactory.cpp
+@@ -206,7 +206,15 @@ int CPlayerCoreFactory::GetPlayerIndex(const std::string& strCoreName) const
+     if (StringUtils::EqualsNoCase(strCoreName, "audiodefaultplayer"))
+       strRealCoreName = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_audioDefaultPlayer;
+     else if (StringUtils::EqualsNoCase(strCoreName, "videodefaultplayer"))
++    {
+       strRealCoreName = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_videoDefaultPlayer;
++#if defined(TARGET_DARWIN_TVOS)
++      const int preferred = m_settings->GetInt("videoplayer.dexhubengine");
++      if (preferred == 1) strRealCoreName = "Aether";
++      else if (preferred == 2)
++        strRealCoreName = m_settings->GetInt("videoplayer.dexhubexternal") == 1 ? "VidHub" : "Infuse";
++#endif
++    }
+     else
+       strRealCoreName = strCoreName;
+ 
+@@ -373,6 +381,16 @@ bool CPlayerCoreFactory::LoadConfiguration(const std::string &file, bool clear)
+     VideoPlayer->m_bPlaysAudio = true;
+     VideoPlayer->m_bPlaysVideo = true;
+     m_vecPlayerConfigs.emplace_back(std::move(VideoPlayer));
++#if defined(TARGET_DARWIN_TVOS)
++    // DexHub native player cores.
++    for (const char* name : {"Aether", "Infuse", "VidHub", "SenPlayer", "VLC", "Native Player", "Outplayer", "nPlayer"})
++    {
++      auto native = std::make_unique<CPlayerCoreConfig>(name, "video", nullptr);
++      native->m_bPlaysAudio = true;
++      native->m_bPlaysVideo = true;
++      m_vecPlayerConfigs.emplace_back(std::move(native));
++    }
++#endif
+ 
+     auto paplayer = std::make_unique<CPlayerCoreConfig>("PAPlayer", "music", nullptr);
+     paplayer->m_bPlaysAudio = true;
+diff --git a/xbmc/guilib/DexListAppend.h b/xbmc/guilib/DexListAppend.h
+new file mode 100644
+index 0000000..e1bf4aa
+--- /dev/null
++++ b/xbmc/guilib/DexListAppend.h
+@@ -0,0 +1,30 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++
++#include <algorithm>
++
++namespace DEXHUB
++{
++// Python sends the complete list even when it only adds a page. Reuse the
++// existing objects (and their focused layouts/textures) for a strict append.
++// Equal labels/paths are insufficient: replacements must still rebind.
++template<class Existing, class Incoming>
++bool AppendUnchangedPrefix(Existing& existing, const Incoming& incoming)
++{
++  if (existing.empty() || incoming.size() <= existing.size() ||
++      !std::equal(existing.begin(), existing.end(), incoming.begin()))
++    return false;
++
++  existing.insert(existing.end(), incoming.begin() + existing.size(), incoming.end());
++  return true;
++}
++
++template<class Snapshot>
++void DetachListSnapshot(Snapshot& snapshot)
++{
++  // CFileItemList's destructor frees shared item layouts. Remove() drops only
++  // its references, leaving the live container's layouts and textures intact.
++  for (int i = snapshot.Size(); i > 0; --i)
++    snapshot.Remove(i - 1);
++}
++} // namespace DEXHUB
+diff --git a/xbmc/guilib/GUIBaseContainer.cpp b/xbmc/guilib/GUIBaseContainer.cpp
+index 08c32aa..1e5179a 100644
+--- a/xbmc/guilib/GUIBaseContainer.cpp
++++ b/xbmc/guilib/GUIBaseContainer.cpp
+@@ -8,6 +8,10 @@
+ 
+ #include "GUIBaseContainer.h"
+ 
++#if defined(TARGET_DARWIN_TVOS)
++#include "DexListAppend.h"
++#endif
++
+ #include "FileItem.h"
+ #include "FileItemList.h"
+ #include "GUIInfoManager.h"
+@@ -536,8 +540,20 @@ bool CGUIBaseContainer::OnMessage(CGUIMessage& message)
+     {
+       if (message.GetMessage() == GUI_MSG_LABEL_BIND && message.GetPointer())
+       { // bind our items
+-        Reset();
+         CFileItemList *items = static_cast<CFileItemList*>(message.GetPointer());
++#if defined(TARGET_DARWIN_TVOS)
++        // A Python append must not rewind a gesture that arrived since binding
++        // was queued, or release every visible card's layout and artwork.
++        if (message.GetParam2() == 1 && DEXHUB::AppendUnchangedPrefix(m_items, items->GetList()))
++        {
++          DEXHUB::DetachListSnapshot(*items);
++          SetPageControlRange();
++          UpdateScrollByLetter();
++          MarkDirtyRegion();
++          return true;
++        }
++#endif
++        Reset();
+         for (int i = 0; i < items->Size(); i++)
+           m_items.push_back(items->Get(i));
+         UpdateLayout(true); // true to refresh all items
+diff --git a/xbmc/guilib/GUIButtonControl.cpp b/xbmc/guilib/GUIButtonControl.cpp
+index b838699..630915b 100644
+--- a/xbmc/guilib/GUIButtonControl.cpp
++++ b/xbmc/guilib/GUIButtonControl.cpp
+@@ -60,6 +60,7 @@ CGUIButtonControl::CGUIButtonControl(const CGUIButtonControl& control)
+     m_label(control.m_label),
+     m_label2(control.m_label2),
+     m_clickActions(control.m_clickActions),
++    m_dexLongClickActions(control.m_dexLongClickActions),
+     m_focusActions(control.m_focusActions),
+     m_unfocusActions(control.m_unfocusActions),
+     m_bSelected(control.m_bSelected)
+@@ -228,6 +229,11 @@ void CGUIButtonControl::ProcessText(unsigned int currentTime)
+ 
+ bool CGUIButtonControl::OnAction(const CAction &action)
+ {
++  if (action.GetID() == ACTION_CONTEXT_MENU && m_dexLongClickActions.HasActionsMeetingCondition())
++  {
++    m_dexLongClickActions.ExecuteActions(GetID(), GetParentID());
++    return true;
++  }
+   if (action.GetID() == ACTION_SELECT_ITEM)
+   {
+     OnClick();
+diff --git a/xbmc/guilib/GUIButtonControl.h b/xbmc/guilib/GUIButtonControl.h
+index ad3cd39..3d6e09e 100644
+--- a/xbmc/guilib/GUIButtonControl.h
++++ b/xbmc/guilib/GUIButtonControl.h
+@@ -51,6 +51,7 @@ public:
+   virtual void SetLabel(const std::string & aLabel);
+   virtual void SetLabel2(const std::string & aLabel2);
+   void SetClickActions(const CGUIAction& clickActions) { m_clickActions = clickActions; }
++  void SetDexLongClickActions(const CGUIAction& actions) { m_dexLongClickActions = actions; }
+   const CGUIAction& GetClickActions() const { return m_clickActions; }
+   void SetFocusActions(const CGUIAction& focusActions) { m_focusActions = focusActions; }
+   void SetUnFocusActions(const CGUIAction& unfocusActions) { m_unfocusActions = unfocusActions; }
+@@ -107,6 +108,7 @@ protected:
+   CGUILabel      m_label2;
+ 
+   CGUIAction m_clickActions;
++  CGUIAction m_dexLongClickActions;
+   CGUIAction m_focusActions;
+   CGUIAction m_unfocusActions;
+ 
+diff --git a/xbmc/guilib/GUIControlFactory.cpp b/xbmc/guilib/GUIControlFactory.cpp
+index 0ae1c69..9f95003 100644
+--- a/xbmc/guilib/GUIControlFactory.cpp
++++ b/xbmc/guilib/GUIControlFactory.cpp
+@@ -1414,6 +1414,9 @@ CGUIControl* CGUIControlFactory::Create(int parentID,
+       bcontrol->SetLabel2(strLabel2);
+       bcontrol->SetMinWidth(minWidth);
+       bcontrol->SetClickActions(clickActions);
++      CGUIAction dexLongClickActions;
++      GetActions(pControlNode, "onlongclick", dexLongClickActions);
++      bcontrol->SetDexLongClickActions(dexLongClickActions);
+       bcontrol->SetFocusActions(focusActions);
+       bcontrol->SetUnFocusActions(unfocusActions);
+ 
+diff --git a/xbmc/guilib/GUIVideoControl.cpp b/xbmc/guilib/GUIVideoControl.cpp
+index 88bc119..3574428 100644
+--- a/xbmc/guilib/GUIVideoControl.cpp
++++ b/xbmc/guilib/GUIVideoControl.cpp
+@@ -7,6 +7,9 @@
+  */
+ 
+ #include "GUIVideoControl.h"
++#if defined(TARGET_DARWIN_TVOS)
++unsigned int DexAetherRedrawRevision();
++#endif
+ 
+ #include "GUIComponent.h"
+ #include "GUITexture.h"
+@@ -40,6 +43,19 @@ void CGUIVideoControl::Process(unsigned int currentTime, CDirtyRegionList &dirty
+   // See CGUIWindowFullScreen::Process for full rationale.
+   if (!appPlayer->IsRenderingVideoLayer())
+     MarkDirtyRegion();
++#if defined(TARGET_DARWIN_TVOS)
++  // DexHub redraw on change v21.
++  else if (appPlayer->GetCurrentPlayer() == "Aether")
++  {
++    static unsigned int dexSeen = 0;
++    const unsigned int dexNow = DexAetherRedrawRevision();
++    if (dexNow != dexSeen)
++    {
++      dexSeen = dexNow;
++      MarkDirtyRegion();
++    }
++  }
++#endif
+ 
+   CGUIControl::Process(currentTime, dirtyregions);
+ }
+@@ -81,6 +97,9 @@ void CGUIVideoControl::Render()
+                RENDER_ORDER_ALL_BACK_TO_FRONT)
+         CServiceBroker::GetWinSystem()->GetGfxContext().Clear(0);
+       CServiceBroker::GetWinSystem()->GetGfxContext().SetScissors(old);
++      // DexHub embedded video rect and subtitles.
++      if (appPlayer->GetCurrentPlayer() == "Aether")
++        appPlayer->Render(false, alpha);
+     }
+     else
+       appPlayer->Render(false, alpha);
+diff --git a/xbmc/guilib/GUIWindow.cpp b/xbmc/guilib/GUIWindow.cpp
+index d41892b..4178b06 100644
+--- a/xbmc/guilib/GUIWindow.cpp
++++ b/xbmc/guilib/GUIWindow.cpp
+@@ -7,6 +7,10 @@
+  */
+ 
+ #include "GUIWindow.h"
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSNativeSkin.h"
++#endif
++
+ 
+ #include "GUIAudioManager.h"
+ #include "GUIComponent.h"
+@@ -350,6 +354,12 @@ void CGUIWindow::DoProcess(unsigned int currentTime, CDirtyRegionList &dirtyregi
+ 
+ void CGUIWindow::DoRender()
+ {
++#if defined(TARGET_DARWIN_TVOS)
++  // Suppress only the OSD chrome UIKit owns. Full-screen video, Kodi
++  // subtitles, other dialogs and window finalization still render normally.
++  if (CTVOSNativeSkin::SuppressWindowDraw(GetID()))
++    return;
++#endif
+   // If we're rendering from a different thread, then we should wait for the main
+   // app thread to finish AllocResources(), as dynamic resources (images in particular)
+   // will try and be allocated from 2 different threads, which causes nasty things
+diff --git a/xbmc/interfaces/builtins/AddonBuiltins.cpp b/xbmc/interfaces/builtins/AddonBuiltins.cpp
+index 58d3b5b..9c2dc5c 100644
+--- a/xbmc/interfaces/builtins/AddonBuiltins.cpp
++++ b/xbmc/interfaces/builtins/AddonBuiltins.cpp
+@@ -7,6 +7,12 @@
+  */
+ 
+ #include "AddonBuiltins.h"
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/filesystem/TVOSFileUtils.h"
++#include "settings/Settings.h"
++#include "settings/SettingsComponent.h"
++#include <filesystem>
++#endif
+ 
+ #include "FileItem.h"
+ #include "GUIPassword.h"
+@@ -504,6 +510,33 @@ static int UpdateLocals(const std::vector<std::string>& params)
+ ///  \table_end
+ ///
+ 
++// DexHub uploaded ZIP install v13.
++#if defined(TARGET_DARWIN_TVOS)
++static int DexHubInstallZip(const std::vector<std::string>& params)
++{
++  if (params.empty() || !g_passwordManager.CheckMenuLock(WINDOW_ADDON_BROWSER)) return -1;
++  std::error_code error;
++  const auto imports = std::filesystem::canonical(
++      std::filesystem::path(CTVOSFileUtils::GetUserHomeDirectory()) / "dexhub-imports", error);
++  if (error) return -1;
++  const auto file = std::filesystem::canonical(params[0], error);
++  if (error || file.parent_path() != imports || file.extension() != ".zip" ||
++      !std::filesystem::is_regular_file(file, error) || error) return -1;
++  if (!CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
++          CSettings::SETTING_ADDONS_ALLOW_UNKNOWN_SOURCES))
++  {
++    if (MESSAGING::HELPERS::ShowYesNoDialogText(13106, 36617, 186, 10004) == DialogResponse::CHOICE_YES)
++      CServiceBroker::GetGUI()->GetWindowManager().ActivateWindow(
++          WINDOW_SETTINGS_SYSTEM, CSettings::SETTING_ADDONS_ALLOW_UNKNOWN_SOURCES);
++    return -1;
++  }
++  if (MESSAGING::HELPERS::ShowYesNoDialogText(
++          "DexHub", "Install the addon ZIP uploaded from your phone?") != DialogResponse::CHOICE_YES)
++    return -1;
++  return CAddonInstaller::GetInstance().InstallFromZip(file.string()) ? 0 : -1;
++}
++#endif
++
+ CBuiltins::CommandMap CAddonBuiltins::GetOperations() const
+ {
+   return {
+@@ -511,6 +544,9 @@ CBuiltins::CommandMap CAddonBuiltins::GetOperations() const
+            {"addon.default.set",          {"Open a select dialog to allow choosing the default addon of the given type", 1, SetDefaultAddon}},
+            {"addon.opensettings",         {"Open a settings dialog for the addon of the given id", 1, AddonSettings}},
+            {"enableaddon",                {"Enables the specified plugin/script", 1, EnableAddon}},
++#if defined(TARGET_DARWIN_TVOS)
++           {"dexhub.installzip", {"Install an uploaded addon ZIP", 1, DexHubInstallZip}},
++#endif
+            {"installaddon",               {"Install the specified plugin/script", 1, InstallAddon}},
+            {"installfromzip",             { "Open the install from zip dialog", 0, InstallFromZip}},
+            {"runaddon",                   {"Run the specified plugin/script", 1, RunAddon}},
+diff --git a/xbmc/interfaces/builtins/SystemBuiltins.cpp b/xbmc/interfaces/builtins/SystemBuiltins.cpp
+index a18e3a3..7c7dd32 100644
+--- a/xbmc/interfaces/builtins/SystemBuiltins.cpp
++++ b/xbmc/interfaces/builtins/SystemBuiltins.cpp
+@@ -12,6 +12,10 @@
+ #include "messaging/ApplicationMessenger.h"
+ #include "utils/StringUtils.h"
+ 
++#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSExternalApp.h"
++#endif
++
+ /*! \brief Execute a system executable.
+  *  \param params The parameters.
+  *  \details params[0] = The path to the executable.
+@@ -251,6 +255,17 @@ static int Suspend(const std::vector<std::string>& params)
+ /// \table_end
+ ///
+ 
++static int OpenURL(const std::vector<std::string>& params)
++{
++#if defined(TARGET_DARWIN_TVOS)
++  if (!params.empty() && !params[0].empty())
++    CTVOSExternalApp::OpenURL(params[0]);
++  return 0;
++#else
++  return -1;
++#endif
++}
++
+ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
+ {
+   return {{"activatescreensaver", {"Activate Screensaver", 0, ActivateScreensaver}},
+@@ -269,5 +284,7 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
+           {"suspend", {"Suspends the system", 0, Suspend}},
+           {"system.exec", {"Execute shell commands", 1, Exec<0>}},
+           {"system.execwait",
+-           {"Execute shell commands and freezes Kodi until shell is closed", 1, Exec<1>}}};
++           {"Execute shell commands and freezes Kodi until shell is closed", 1, Exec<1>}},
++          {"system.openurl",
++           {"Open an external app via its URL scheme, e.g. infuse://...", 1, OpenURL}}};
+ }
+diff --git a/xbmc/interfaces/legacy/Control.cpp b/xbmc/interfaces/legacy/Control.cpp
+index 21c6ebf..0c5b841 100644
+--- a/xbmc/interfaces/legacy/Control.cpp
++++ b/xbmc/interfaces/legacy/Control.cpp
+@@ -1312,6 +1312,11 @@ namespace XBMCAddon
+         static_cast<CFileItemList*>(items.get())->Add(vecItems[i]->item);
+ 
+       CGUIMessage msg(GUI_MSG_LABEL_BIND, iParentId, iControlId, 0, 0, items);
++#if defined(TARGET_DARWIN_TVOS)
++      // DexHub stable append: only a full snapshot may preserve the live list.
++      if (tail == static_cast<int>(vecItems.size()))
++        msg.SetParam2(1);
++#endif
+       msg.SetPointer(items.get());
+       CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg, iParentId);
+     }
+diff --git a/xbmc/platform/darwin/tvos/CMakeLists.txt b/xbmc/platform/darwin/tvos/CMakeLists.txt
+index 5a7af7e..26043ec 100644
+--- a/xbmc/platform/darwin/tvos/CMakeLists.txt
++++ b/xbmc/platform/darwin/tvos/CMakeLists.txt
+@@ -1,6 +1,11 @@
+-set(SOURCES PreflightHandler.mm
++set_source_files_properties(TVOSNativeSkin.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
++set(SOURCES TVOSNativeSkin.mm
++            TVOSDexHubSetup.mm
++            TVOSAetherPlayer.mm
++            PreflightHandler.mm
+             TVOSDisplayManager.mm
+             TVOSEAGLView.mm
++            TVOSExternalApp.mm
+             TVOSKeyboardView.mm
+             TVOSNSUserDefaults.mm
+             TVOSSettingsHandler.mm
+@@ -8,9 +13,13 @@ set(SOURCES PreflightHandler.mm
+             TVOSTopShelf.mm
+             XBMCController.mm)
+ 
+-set(HEADERS PreflightHandler.h
++set(HEADERS TVOSNativeSkin.h
++            TVOSDexHubSetup.h
++            TVOSAetherPlayer.h
++            PreflightHandler.h
+             TVOSDisplayManager.h
+             TVOSEAGLView.h
++            TVOSExternalApp.h
+             TVOSKeyboardView.h
+             TVOSNSUserDefaults.h
+             TVOSSettingsHandler.h
+diff --git a/xbmc/platform/darwin/tvos/Info.plist.in b/xbmc/platform/darwin/tvos/Info.plist.in
+index 80406e8..5065575 100644
+--- a/xbmc/platform/darwin/tvos/Info.plist.in
++++ b/xbmc/platform/darwin/tvos/Info.plist.in
+@@ -5,7 +5,7 @@
+ 	<key>CFBundleDevelopmentRegion</key>
+ 	<string>English</string>
+ 	<key>CFBundleDisplayName</key>
+-	<string>@APP_NAME@</string>
++	<string>Dex Hub</string>
+ 	<key>CFBundleExecutable</key>
+ 	<string>@APP_NAME@</string>
+ 	<key>CFBundleIdentifier</key>
+@@ -18,18 +18,28 @@
+ 	<string>APPL</string>
+ 	<key>CFBundleShortVersionString</key>
+ 	<string>@APP_VERSION@</string>
++	<key>UIUserInterfaceStyle</key>
++	<string>Dark</string>
+ 	<key>CFBundleSignature</key>
+ 	<string>????</string>
+ 	<key>CFBundleURLTypes</key>
+ 	<array>
+-	<dict>
+-		<key>CFBundleURLName</key>
+-		<string>@PLATFORM_BUNDLE_IDENTIFIER@</string>
+-		<key>CFBundleURLSchemes</key>
+-		<array>
+-			<string>kodi</string>
+-		</array>
+-	</dict>
++		<dict>
++			<key>CFBundleURLName</key>
++			<string>@PLATFORM_BUNDLE_IDENTIFIER@</string>
++			<key>CFBundleURLSchemes</key>
++			<array>
++				<string>kodi</string>
++			</array>
++		</dict>
++		<dict>
++			<key>CFBundleURLName</key>
++			<string>DexHub Infuse return</string>
++			<key>CFBundleURLSchemes</key>
++			<array>
++				<string>dexhub-player</string>
++			</array>
++		</dict>
+ 	</array>
+ 	<key>CFBundleVersion</key>
+ 	<string>@APP_SCMID@</string>
+@@ -47,5 +57,24 @@
+ 		<string>arm64</string>
+ 		<string>opengles-3</string>
+ 	</array>
++	<key>UIApplicationSceneManifest</key>
++	<dict>
++		<key>UIApplicationSupportsMultipleScenes</key>
++		<false/>
++		<key>UISceneConfigurations</key>
++		<dict>
++			<key>UIWindowSceneSessionRoleApplication</key>
++			<array>
++				<dict>
++					<key>UISceneConfigurationName</key>
++					<string>DexHub Kodi</string>
++					<key>UISceneClassName</key>
++					<string>UIWindowScene</string>
++					<key>UISceneDelegateClassName</key>
++					<string>DexHubSceneDelegate</string>
++				</dict>
++			</array>
++		</dict>
++	</dict>
+ </dict>
+ </plist>
+diff --git a/xbmc/platform/darwin/tvos/TVOSAetherPlayer.h b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.h
+new file mode 100644
+index 0000000..bf47afd
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.h
+@@ -0,0 +1,73 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++
++#include "cores/IPlayer.h"
++#include "threads/Thread.h"
++
++#include <atomic>
++#include <memory>
++#include <mutex>
++
++// DexHub v21: bumps when the Kodi layer above Aether must redraw (subtitle text,
++// video size or start). The GUI stays idle otherwise.
++unsigned int DexAetherRedrawRevision();
++
++class CTVOSAetherPlayer final : public IPlayer, private CThread
++{
++public:
++  explicit CTVOSAetherPlayer(IPlayerCallback& callback);
++  ~CTVOSAetherPlayer() override;
++  bool OpenFile(const CFileItem& file, const CPlayerOptions& options) override;
++  bool CloseFile(bool reopen = false) override;
++  bool IsPlaying() const override;
++  bool HasVideo() const override;
++  bool HasAudio() const override;
++  bool CanSeek() const override;
++  void Pause() override;
++  void Seek(bool plus, bool large, bool chapter) override;
++  void SeekPercentage(float percent) override;
++  void SeekTime(int64_t milliseconds) override;
++  bool SeekTimeRelative(int64_t milliseconds) override;
++  void SetSpeed(float speed) override;
++  void SetMute(bool muted) override;
++  void SetVolume(float volume) override;
++  void SetAVDelay(float delay) override;
++  float GetAVDelay() override;
++  void SetSubTitleDelay(float delay) override;
++  float GetSubTitleDelay() override;
++  int GetSubtitleCount() const override;
++  int GetSubtitle() override;
++  void GetSubtitleStreamInfo(int index, SubtitleStreamInfo& info) const override;
++  void SetSubtitle(int index) override;
++  bool GetSubtitleVisible() const override;
++  void SetSubtitleVisible(bool visible) override;
++  void AddSubtitle(const std::string& path) override;
++  int GetAudioStreamCount() const override;
++  int GetAudioStream() override;
++  void GetAudioStreamInfo(int index, AudioStreamInfo& info) const override;
++  void SetAudioStream(int index) override;
++  int GetVideoStreamCount() const override;
++  int GetVideoStream() const override;
++  void GetVideoStreamInfo(int index, VideoStreamInfo& info) const override;
++  void Render(bool clear, uint32_t alpha, bool gui) override;
++  void GetRects(CRect& source, CRect& dest, CRect& view) const override;
++  float GetRenderAspectRatio() const override;
++  bool IsRenderingVideo() const override;
++  bool HasVisibleOverlay() const override;
++  bool IsCaching() const override;
++  void SetSubtitleVerticalPosition(int value, bool save) override;
++  void GetAudioCapabilities(std::vector<IPlayerAudioCaps>& caps) const override;
++  void GetSubtitleCapabilities(std::vector<IPlayerSubtitleCaps>& caps) const override;
++  CVideoSettings GetVideoSettings() const override;
++  void SetVideoSettings(CVideoSettings& settings) override;
++
++private:
++  void Process() override;
++  void Command(const std::string& name, double value = 0, const std::string& text = "");
++  struct State;
++  static std::string ActiveText(const State& state);
++  std::unique_ptr<State> m_state;
++  mutable std::mutex m_lock;
++  std::atomic<bool> m_playing{false};
++  std::atomic<bool> m_open{false};
++};
+diff --git a/xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm
+new file mode 100644
+index 0000000..324f8b4
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm
+@@ -0,0 +1,683 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "TVOSAetherPlayer.h"
++
++#include "FileItem.h"
++#include "ServiceBroker.h"
++#include "TextureCache.h"
++#include "Util.h"
++#include "cores/AudioEngine/Interfaces/AE.h"
++#include "cores/DataCacheCore.h"
++#include "cores/VideoPlayer/DVDSubtitles/SubtitlesAdapter.h"
++#include "cores/VideoPlayer/VideoRenderers/OverlayRenderer.h"
++#include "filesystem/SpecialProtocol.h"
++#include "messaging/ApplicationMessenger.h"
++#include "platform/darwin/tvos/filesystem/TVOSFileUtils.h"
++#include "settings/Settings.h"
++#include "settings/SettingsComponent.h"
++#include "windowing/GraphicContext.h"
++#include "utils/LanguageTag.h"
++#include "utils/StringUtils.h"
++#include "utils/log.h"
++#include "video/Bookmark.h"
++#include "video/VideoInfoTag.h"
++#include "windowing/WinSystem.h"
++#include "TVOSEAGLView.h"
++#include "XBMCController.h"
++
++#import <Foundation/Foundation.h>
++#import <UIKit/UIKit.h>
++
++#include <algorithm>
++#include <chrono>
++
++@interface NSObject (DexAetherNativeAPI)
+++ (void)startEmbedded:(NSDictionary*)request inView:(UIView*)parent belowView:(UIView*)overlay;
+++ (NSDictionary*)snapshotForToken:(NSString*)token;
+++ (void)command:(NSDictionary*)request;
++@end
++
++namespace
++{
++std::string String(id value)
++{
++  return [value isKindOfClass:[NSString class]] ? std::string([value UTF8String]) : "";
++}
++NSString* NS(const std::string& value) { return [NSString stringWithUTF8String:value.c_str()]; }
++Class Bridge(const std::string&, bool load = true)
++{
++  NSString* name = @"DexAetherBridge";
++  Class bridge = NSClassFromString(name);
++  if (bridge)
++    return bridge;
++  if (!load)
++    return Nil;
++  NSString* path = [[[NSBundle mainBundle] privateFrameworksPath]
++      stringByAppendingPathComponent:[name stringByAppendingString:@".framework"]];
++  NSError* error = nil;
++  if (![[NSBundle bundleWithPath:path] loadAndReturnError:&error])
++    return Nil;
++  return NSClassFromString(name);
++}
++struct Track
++{
++  int id;
++  std::string name, language, codec;
++  int channels, samplerate, bits;
++  bool external;
++  // v21.2: name, language and flags Kodi reads from the sidecar's file name,
++  // the same way VideoPlayer labels an external subtitle.
++  bool labelled{false};
++  ExternalStreamInfo label;
++};
++std::vector<Track> Tracks(NSArray* rows)
++{
++  std::vector<Track> result;
++  for (NSDictionary* row in rows)
++    result.push_back({[row[@"id"] intValue], String(row[@"name"]), String(row[@"language"]),
++                      String(row[@"codec"]), [row[@"channels"] intValue],
++                      [row[@"samplerate"] intValue], [row[@"bits"] intValue],
++                      [row[@"external"] boolValue]});
++  return result;
++}
++std::atomic<unsigned int> g_redraw{1};
++void RequestRedraw() { g_redraw.fetch_add(1, std::memory_order_relaxed); }
++int TrackIndex(const std::vector<Track>& tracks, int id)
++{
++  for (size_t index = 0; index < tracks.size(); ++index)
++    if (tracks[index].id == id)
++      return static_cast<int>(index);
++  return -1;
++}
++}
++
++struct CTVOSAetherPlayer::State
++{
++  CFileItem file;
++  std::string token;
++  std::string status{"loading"}, codec, hdr;
++  std::vector<Track> audio, subtitles;
++  std::vector<std::string> externalPaths;
++  int audioId{-1}, subtitleId{-1}, savedSubtitle{-1}, width{0}, height{0};
++  int trackRevision{-1};
++  double position{0}, duration{0}, sourceTime{0};
++  float fps{0}, volume{1};
++  bool visible{true}, muted{false}, suspended{false}, started{false}, external{false}, fullscreen{false};
++  CVideoSettings settings;
++  CRect source, dest, view, lastNativeRect;
++  CSubtitlesAdapter text;
++  OVERLAY::CRenderer overlays;
++  std::shared_ptr<CDVDOverlay> overlay;
++  std::string lastText, polledText;
++  bool renderReported{false};
++  NSArray* __strong cues{nil};
++};
++
++unsigned int DexAetherRedrawRevision() { return g_redraw.load(std::memory_order_relaxed); }
++
++std::string CTVOSAetherPlayer::ActiveText(const State& state)
++{
++  std::string text;
++  if (!state.visible)
++    return text;
++  const double time = state.sourceTime + state.settings.m_SubtitleDelay;
++  for (NSDictionary* cue in state.cues)
++    if (time >= [cue[@"start"] doubleValue] && time < [cue[@"end"] doubleValue])
++    {
++      auto line = String(cue[@"text"]);
++      if (!line.empty()) { if (!text.empty()) text += "\n"; text += line; }
++    }
++  return text;
++}
++
++CTVOSAetherPlayer::CTVOSAetherPlayer(IPlayerCallback& callback)
++  : IPlayer(callback), CThread("DexAetherPlayer"), m_state(std::make_unique<State>())
++{
++}
++CTVOSAetherPlayer::~CTVOSAetherPlayer() { CloseFile(); }
++
++bool CTVOSAetherPlayer::OpenFile(const CFileItem& file, const CPlayerOptions& options)
++{
++  CloseFile();
++  @autoreleasepool
++  {
++    std::lock_guard lock(m_lock);
++    m_state = std::make_unique<State>();
++    auto& state = *m_state;
++    state.file = file;
++    // v21.4: every external player core hands the video to its app
++    state.external = m_name == "Infuse" || m_name == "VidHub" || m_name == "SenPlayer" || m_name == "VLC" ||
++                     m_name == "Native Player" || m_name == "Outplayer" || m_name == "nPlayer";
++    state.fullscreen = options.fullscreen;
++    state.position = std::max(0.0, options.starttime);
++    state.token = String([[NSUUID UUID] UUIDString]);
++    if (!state.text.Initialize())
++      return false;
++    state.overlay = state.text.CreateOverlay();
++    if (auto ae = CServiceBroker::GetActiveAE())
++    {
++      state.suspended = ae->Suspend();
++      if (!state.suspended)
++        return false;
++    }
++    CDataCacheCore::GetInstance().SetVideoDecoderName(m_name, true);
++    CDataCacheCore::GetInstance().SetGuiRender(true);
++    CDataCacheCore::GetInstance().SetVideoRender(!state.external);
++    CDataCacheCore::GetInstance().SetSpeed(1, 1);
++    NSMutableDictionary* request = [NSMutableDictionary dictionaryWithDictionary:@{
++      @"token": NS(state.token), @"url": NS(file.GetDynPath()),
++      @"position": @(state.position), @"percent": @(options.startpercent),
++      @"engine": NS(m_name)}];
++    request[@"home"] = NS(CTVOSFileUtils::GetUserHomeDirectory());
++    request[@"truehdAtmosLayout"] = @(CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt("videoplayer.dexhubtruehdatmos"));
++    request[@"kodiPath"] = NS(file.GetPath());
++    const std::string context = file.GetProperty("dexhub.external.context").asString();
++    if (!context.empty())
++    {
++      NSData* data = [NS(context) dataUsingEncoding:NSUTF8StringEncoding];
++      id value = [NSJSONSerialization JSONObjectWithData:data options:0 error:nullptr];
++      if ([value isKindOfClass:[NSDictionary class]]) request[@"context"] = value;
++    }
++    const double duration = file.HasVideoInfoTag() ? file.GetVideoInfoTag()->GetDuration() : 0;
++    request[@"duration"] = @(duration);
++    if (state.external && state.position == 0 && options.startpercent > 0 && duration > 0)
++      request[@"position"] = @(duration * options.startpercent / 100);
++    std::string filename = file.GetProperty("dexhub.external.filename").asString();
++    if (filename.empty())
++    {
++      filename = file.GetLabel();
++      if (file.HasVideoInfoTag())
++      {
++        const auto* tag = file.GetVideoInfoTag();
++        if (!tag->m_strShowTitle.empty()) filename = tag->m_strShowTitle;
++        else if (!tag->m_strTitle.empty()) filename = tag->m_strTitle;
++        if (tag->m_iSeason >= 0 && tag->m_iEpisode >= 0)
++          filename += " S" + std::string(tag->m_iSeason < 10 ? "0" : "") + std::to_string(tag->m_iSeason) +
++              "E" + std::string(tag->m_iEpisode < 10 ? "0" : "") + std::to_string(tag->m_iEpisode);
++        else if (tag->GetYear() > 0) filename += " (" + std::to_string(tag->GetYear()) + ")";
++      }
++      if (!filename.empty()) filename += ".mkv";
++    }
++    request[@"filename"] = NS(filename);
++    NSMutableDictionary* nowPlaying = [NSMutableDictionary dictionary];
++    std::string title = file.GetLabel();
++    if (file.HasVideoInfoTag())
++    {
++      const auto* tag = file.GetVideoInfoTag();
++      if (!tag->m_strTitle.empty()) title = tag->m_strTitle;
++      if (!tag->m_strShowTitle.empty())
++      {
++        std::string show = tag->m_strShowTitle;
++        if (tag->m_iSeason >= 0 && tag->m_iEpisode >= 0)
++          show += " · S" + std::to_string(tag->m_iSeason) + " E" + std::to_string(tag->m_iEpisode);
++        nowPlaying[@"subtitle"] = NS(show);
++      }
++      else if (tag->GetYear() > 0)
++        nowPlaying[@"subtitle"] = NS(std::to_string(tag->GetYear()));
++      nowPlaying[@"episode"] = @(!tag->m_strShowTitle.empty());
++    }
++    nowPlaying[@"title"] = NS(title);
++    for (const char* type : {"poster", "tvshow.poster", "thumb", "icon", "fanart"})
++    {
++      const std::string art = file.GetArt(type);
++      if (art.empty()) continue;
++      // Kodi has usually cached the poster already while the item was on screen.
++      bool needsRecaching = false;
++      const std::string cached = CServiceBroker::GetTextureCache()->CheckCachedImage(art, needsRecaching);
++      if (!cached.empty())
++        nowPlaying[@"artworkPath"] = NS(CSpecialProtocol::TranslatePath(cached));
++      else if (StringUtils::StartsWith(art, "http://") || StringUtils::StartsWith(art, "https://"))
++        nowPlaying[@"artworkURL"] = NS(art);
++      else if (!StringUtils::StartsWith(art, "image://"))
++        nowPlaying[@"artworkPath"] = NS(CSpecialProtocol::TranslatePath(art));
++      else continue;
++      break;
++    }
++    request[@"nowPlaying"] = nowPlaying;
++    std::string subtitles = file.GetProperty("dexhub.aether.subtitles").asString();
++    if (!subtitles.empty())
++    {
++      NSData* data = [NS(subtitles) dataUsingEncoding:NSUTF8StringEncoding];
++      id rows = [NSJSONSerialization JSONObjectWithData:data options:0 error:nullptr];
++      if ([rows isKindOfClass:[NSArray class]])
++        request[@"subtitles"] = rows;
++    }
++    NSMutableArray* paths = [NSMutableArray array];
++    for (NSString* path in request[@"subtitles"])
++      [paths addObject:NS(CSpecialProtocol::TranslatePath(String(path)))];
++    for (unsigned index = 1; ; ++index)
++    {
++      std::string key = "subtitle:" + std::to_string(index);
++      if (!file.HasProperty(key)) break;
++      NSString* path = NS(CSpecialProtocol::TranslatePath(file.GetProperty(key).asString()));
++      if (![paths containsObject:path]) [paths addObject:path];
++    }
++    request[@"subtitles"] = paths;
++    for (NSString* path in paths)
++      state.externalPaths.push_back(String(path));
++    const std::string engineName = m_name;
++    dispatch_async(dispatch_get_main_queue(), ^{
++      Class bridge = Bridge(engineName);
++      if ([bridge respondsToSelector:@selector(startEmbedded:inView:belowView:)])
++        [bridge startEmbedded:request inView:g_xbmcController.view belowView:g_xbmcController.glView];
++      else
++        CLog::Log(LOGERROR, "DexAetherBridge native player entry point missing");
++    });
++    m_open = true;
++    m_playing = true;
++    Create();
++  }
++  // v21.1: the same order as VideoPlayer. Kodi and its Python add-ons hear
++  // "playback started" when the file opens and "AV started" when the first
++  // frame shows. v11 to v21 sent both together only once Aether drew its
++  // first frame, often seconds after the add-on that started playback had
++  // ended; Python's callback queue then ran a stale callback and the app was
++  // killed (EXC_BAD_ACCESS in RetardedAsyncCallbackHandler::makePendingCalls).
++  CFileItem started;
++  {
++    std::lock_guard lock(m_lock);
++    started = m_state->file;
++  }
++  m_callback.OnPlayBackStarted(started);
++  return true;
++}
++
++bool CTVOSAetherPlayer::CloseFile(bool reopen)
++{
++  if (!m_open.exchange(false))
++    return true;
++  StopThread();
++  Command("stop");
++  std::lock_guard lock(m_lock);
++  if (m_state->suspended)
++  {
++    CServiceBroker::GetActiveAE()->Resume();
++    m_state->suspended = false;
++  }
++  CDataCacheCore::GetInstance().SetVideoRender(false);
++  m_playing = false;
++  return true;
++}
++
++void CTVOSAetherPlayer::Command(const std::string& name, double value, const std::string& text)
++{
++  @autoreleasepool
++  {
++    std::string token;
++    { std::lock_guard lock(m_lock); token = m_state->token; }
++    NSDictionary* request = @{@"token": NS(token), @"name": NS(name), @"value": @(value), @"text": NS(text)};
++    const std::string engineName = m_name;
++    dispatch_async(dispatch_get_main_queue(), ^{
++      Class bridge = Bridge(engineName, false);
++      if ([bridge respondsToSelector:@selector(command:)])
++        [bridge command:request];
++    });
++  }
++}
++
++void CTVOSAetherPlayer::Process()
++{
++  auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(120);
++  bool ended = false, failed = false;
++  while (!m_bStop)
++  {
++    bool start = false;
++    int external = 0; // 1: paused outside Kodi, 2: resumed outside Kodi
++    @autoreleasepool
++    {
++      NSString* token = NS(m_state->token);
++      Class bridge = Bridge(m_name, false);
++      NSDictionary* snapshot = [bridge respondsToSelector:@selector(snapshotForToken:)] ?
++          [bridge snapshotForToken:token] : nil;
++      if (snapshot)
++      {
++        std::lock_guard lock(m_lock);
++        auto& state = *m_state;
++        const std::string previous = state.status;
++        state.status = String(snapshot[@"state"]);
++        if (state.started && state.status != previous)
++        {
++          const bool stopped = CDataCacheCore::GetInstance().GetSpeed() == 0;
++          if (state.status == "paused" && !stopped) external = 1;
++          else if (state.status == "playing" && previous == "paused" && stopped) external = 2;
++        }
++        state.position = [snapshot[@"position"] doubleValue];
++        state.duration = [snapshot[@"duration"] doubleValue];
++        state.sourceTime = [snapshot[@"sourceTime"] doubleValue];
++        const int revision = [snapshot[@"trackRevision"] intValue];
++        const int audioId = snapshot[@"audioId"] ? [snapshot[@"audioId"] intValue] : -1;
++        const int subtitleId = snapshot[@"subtitleId"] ? [snapshot[@"subtitleId"] intValue] : -1;
++        const bool tracksChanged = revision != state.trackRevision || audioId != state.audioId || subtitleId != state.subtitleId;
++        if (revision != state.trackRevision)
++        {
++          state.audio = Tracks(snapshot[@"audio"]);
++          state.subtitles = Tracks(snapshot[@"subtitles"]);
++          state.trackRevision = revision;
++          size_t sidecar = 0;
++          for (auto& track : state.subtitles)
++            if (track.external && sidecar < state.externalPaths.size())
++            {
++              track.label = CUtil::GetExternalStreamDetailsFromFilename(
++                  state.file.GetDynPath(), state.externalPaths[sidecar++]);
++              track.labelled = true;
++            }
++        }
++        state.audioId = snapshot[@"audioId"] ? [snapshot[@"audioId"] intValue] : -1;
++        state.subtitleId = snapshot[@"subtitleId"] ? [snapshot[@"subtitleId"] intValue] : -1;
++        const int width = [snapshot[@"width"] intValue];
++        const int height = [snapshot[@"height"] intValue];
++        if (width != state.width || height != state.height)
++          RequestRedraw();
++        state.width = width;
++        state.height = height;
++        state.fps = [snapshot[@"fps"] floatValue];
++        state.codec = String(snapshot[@"codec"]);
++        state.hdr = String(snapshot[@"hdr"]);
++        state.cues = snapshot[@"cues"];
++        std::string text = ActiveText(state);
++        if (text != state.polledText)
++        {
++          state.polledText = std::move(text);
++          RequestRedraw();
++        }
++        auto& cache = CDataCacheCore::GetInstance();
++        cache.SetVideoRender(!state.external);
++        cache.SetPlayTimes(0, state.position * 1000, 0, state.duration * 1000);
++        cache.SetVideoDimensions(state.width, state.height);
++        cache.SetVideoFps(state.fps);
++        if (state.height > 0) cache.SetVideoDAR(float(state.width) / state.height);
++        if (tracksChanged) cache.SignalSubtitleInfoChange();
++        if (!state.started && (state.status == "playing" || state.status == "paused"))
++        {
++          CLog::Log(LOGINFO, "DexAether video surface: state={}, size={}x{}, codec={}",
++                    state.status, state.width, state.height, state.codec);
++          CLog::Log(LOGINFO, "DexAether v11 surface attachment: window={}, view={}x{}, layers={}",
++                    [snapshot[@"surfaceInWindow"] boolValue],
++                    [snapshot[@"surfaceWidth"] doubleValue], [snapshot[@"surfaceHeight"] doubleValue],
++                    [snapshot[@"surfaceLayers"] intValue]);
++          start = state.started = true;
++          RequestRedraw();
++        }
++        ended = state.status == "ended";
++        failed = state.status == "error";
++        if (failed)
++          CLog::Log(LOGERROR, "Aether playback error: {}", String(snapshot[@"message"]));
++        if (state.status == "external")
++          break;
++      }
++    }
++    if (external)
++    {
++      CDataCacheCore::GetInstance().SetSpeed(1, external == 1 ? 0 : 1);
++      if (external == 1) m_callback.OnPlayBackPaused();
++      else m_callback.OnPlayBackResumed();
++    }
++    if (start)
++    {
++      m_callback.OnAVStarted(m_state->file);
++      m_callback.RequestVideoSettings(m_state->file);
++      if (!m_state->external && m_state->fullscreen)
++      {
++        CLog::Log(LOGINFO, "DexAether v11: requesting Kodi fullscreen video window");
++        CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SWITCHTOFULLSCREEN);
++      }
++    }
++    if (ended || failed)
++      break;
++    if (!m_state->started && std::chrono::steady_clock::now() > deadline)
++    {
++      failed = true;
++      CLog::Log(LOGERROR, "Aether startup timed out");
++      break;
++    }
++    // v21: 10 Hz while starting or while subtitles are on screen (cue timing),
++    // 4 Hz otherwise. Kodi's seek bar and clock only change once a second.
++    int wait = 100;
++    {
++      std::lock_guard lock(m_lock);
++      const auto& state = *m_state;
++      const bool subtitles = state.visible && state.subtitleId >= 0 && state.cues.count > 0;
++      if (state.started && !subtitles && (state.status == "playing" || state.status == "paused"))
++        wait = 250;
++    }
++    Sleep(std::chrono::milliseconds(wait));
++  }
++  CBookmark bookmark;
++  {
++    std::lock_guard lock(m_lock);
++    bookmark.timeInSeconds = m_state->position;
++    bookmark.totalTimeInSeconds = m_state->duration;
++    bookmark.player = m_name;
++  }
++  if (m_state->started)
++  {
++    m_callback.StoreVideoSettings(m_state->file, GetVideoSettings());
++    m_callback.OnPlayerCloseFile(m_state->file, bookmark);
++  }
++  m_playing = false;
++  if (failed) m_callback.OnPlayBackError();
++  else if (ended) m_callback.OnPlayBackEnded();
++  else m_callback.OnPlayBackStopped();
++}
++
++bool CTVOSAetherPlayer::IsPlaying() const { return m_playing; }
++bool CTVOSAetherPlayer::HasVideo() const { return m_playing; }
++bool CTVOSAetherPlayer::HasAudio() const { std::lock_guard lock(m_lock); return !m_state->audio.empty(); }
++bool CTVOSAetherPlayer::CanSeek() const { std::lock_guard lock(m_lock); return m_state->duration > 0; }
++void CTVOSAetherPlayer::Pause()
++{
++  bool paused;
++  { std::lock_guard lock(m_lock); paused = m_state->status == "paused"; }
++  SetSpeed(paused ? 1 : 0);
++}
++void CTVOSAetherPlayer::SetSpeed(float speed)
++{
++  speed = std::clamp(speed, 0.0f, 2.0f);
++  Command("rate", speed);
++  CDataCacheCore::GetInstance().SetSpeed(1, speed);
++  if (speed == 0) m_callback.OnPlayBackPaused();
++  else m_callback.OnPlayBackResumed();
++}
++void CTVOSAetherPlayer::Seek(bool plus, bool large, bool chapter)
++{ SeekTimeRelative((plus ? 1 : -1) * (large ? 600000 : 10000)); }
++void CTVOSAetherPlayer::SeekPercentage(float percent)
++{
++  double total;
++  { std::lock_guard lock(m_lock); total = m_state->duration; }
++  SeekTime(total * std::clamp(percent, 0.0f, 100.0f) * 10);
++}
++bool CTVOSAetherPlayer::SeekTimeRelative(int64_t time)
++{
++  double position;
++  { std::lock_guard lock(m_lock); position = m_state->position; }
++  SeekTime(position * 1000 + time);
++  return true;
++}
++void CTVOSAetherPlayer::SeekTime(int64_t time)
++{
++  double before;
++  { std::lock_guard lock(m_lock); before = m_state->position; }
++  time = std::max<int64_t>(0, time);
++  Command("seek", double(time) / 1000);
++  m_callback.OnPlayBackSeek(time, time - int64_t(before * 1000));
++}
++void CTVOSAetherPlayer::SetVolume(float value)
++{
++  bool muted;
++  { std::lock_guard lock(m_lock); m_state->volume = value; muted = m_state->muted; }
++  Command("volume", muted ? 0 : std::clamp(value, 0.0f, 1.0f));
++}
++void CTVOSAetherPlayer::SetMute(bool muted)
++{
++  float volume;
++  { std::lock_guard lock(m_lock); m_state->muted = muted; volume = m_state->volume; }
++  Command("volume", muted ? 0 : volume);
++}
++void CTVOSAetherPlayer::SetAVDelay(float delay)
++{ { std::lock_guard lock(m_lock); m_state->settings.m_AudioDelay = delay; } Command("audioDelay", delay); }
++float CTVOSAetherPlayer::GetAVDelay() { std::lock_guard lock(m_lock); return m_state->settings.m_AudioDelay; }
++void CTVOSAetherPlayer::SetSubTitleDelay(float delay)
++{ { std::lock_guard lock(m_lock); m_state->settings.m_SubtitleDelay = delay; } Command("subtitleDelay", delay); RequestRedraw(); }
++float CTVOSAetherPlayer::GetSubTitleDelay() { std::lock_guard lock(m_lock); return m_state->settings.m_SubtitleDelay; }
++int CTVOSAetherPlayer::GetSubtitleCount() const { std::lock_guard lock(m_lock); return m_state->subtitles.size(); }
++int CTVOSAetherPlayer::GetSubtitle() { std::lock_guard lock(m_lock); return TrackIndex(m_state->subtitles, m_state->subtitleId); }
++void CTVOSAetherPlayer::GetSubtitleStreamInfo(int index, SubtitleStreamInfo& info) const
++{
++  std::lock_guard lock(m_lock);
++  if (index < 0 || index >= int(m_state->subtitles.size())) return;
++  const auto& track = m_state->subtitles[index];
++  info.valid = true; info.name = track.name; info.codecName = track.codec;
++  info.language = KODI::UTILS::CLanguageTag::Parse(track.language); info.isExternal = track.external;
++  if (track.labelled)
++  {
++    info.name = track.label.name;
++    if (!track.label.language.IsEmpty())
++      info.language = track.label.language;
++    info.flags = static_cast<StreamFlags>(track.label.flag);
++  }
++}
++void CTVOSAetherPlayer::SetSubtitle(int index)
++{
++  int id;
++  { std::lock_guard lock(m_lock);
++    if (index < 0 || index >= int(m_state->subtitles.size())) return;
++    id = m_state->subtitles[index].id; m_state->savedSubtitle = id; m_state->visible = true;
++    m_state->settings.m_SubtitleStream = index; m_state->settings.m_SubtitleOn = true;
++  }
++  Command("subtitle", id);
++  RequestRedraw();
++}
++bool CTVOSAetherPlayer::GetSubtitleVisible() const { std::lock_guard lock(m_lock); return m_state->visible && m_state->subtitleId >= 0; }
++void CTVOSAetherPlayer::SetSubtitleVisible(bool visible)
++{
++  int id = -1;
++  { std::lock_guard lock(m_lock);
++    if (!visible && m_state->subtitleId >= 0) m_state->savedSubtitle = m_state->subtitleId;
++    m_state->visible = visible; m_state->settings.m_SubtitleOn = visible;
++    if (visible) id = m_state->savedSubtitle >= 0 ? m_state->savedSubtitle : (m_state->subtitles.empty() ? -1 : m_state->subtitles.front().id);
++  }
++  Command("subtitle", id);
++  RequestRedraw();
++}
++void CTVOSAetherPlayer::AddSubtitle(const std::string& path)
++{
++  const std::string translated = CSpecialProtocol::TranslatePath(path);
++  { std::lock_guard lock(m_lock); m_state->externalPaths.push_back(translated); }
++  Command("addSubtitle", 0, translated);
++}
++int CTVOSAetherPlayer::GetAudioStreamCount() const { std::lock_guard lock(m_lock); return m_state->audio.size(); }
++int CTVOSAetherPlayer::GetAudioStream() { std::lock_guard lock(m_lock); return TrackIndex(m_state->audio, m_state->audioId); }
++void CTVOSAetherPlayer::GetAudioStreamInfo(int index, AudioStreamInfo& info) const
++{
++  std::lock_guard lock(m_lock);
++  if (index < 0 || index >= int(m_state->audio.size())) return;
++  const auto& track = m_state->audio[index];
++  info.valid = true; info.name = track.name; info.codecName = track.codec;
++  info.language = KODI::UTILS::CLanguageTag::Parse(track.language); info.channels = track.channels;
++  info.samplerate = track.samplerate; info.bitspersample = track.bits;
++}
++void CTVOSAetherPlayer::SetAudioStream(int index)
++{
++  int id;
++  { std::lock_guard lock(m_lock);
++    if (index < 0 || index >= int(m_state->audio.size())) return;
++    id = m_state->audio[index].id; m_state->settings.m_AudioStream = index;
++  }
++  Command("audio", id);
++}
++int CTVOSAetherPlayer::GetVideoStreamCount() const { return 1; }
++int CTVOSAetherPlayer::GetVideoStream() const { return 0; }
++void CTVOSAetherPlayer::GetVideoStreamInfo(int index, VideoStreamInfo& info) const
++{
++  std::lock_guard lock(m_lock);
++  info.valid = true; info.width = m_state->width; info.height = m_state->height;
++  info.codecName = m_state->codec; info.videoAspectRatio = m_state->height > 0 ? float(m_state->width) / m_state->height : 1;
++  info.fpsRate = m_state->fps * 1000; info.fpsScale = 1000;
++  if (m_state->hdr == "dolbyVision") info.hdrType = StreamHdrType::HDR_TYPE_DOLBYVISION;
++  else if (m_state->hdr == "hdr10Plus") info.hdrType = StreamHdrType::HDR_TYPE_HDR10PLUS;
++  else if (m_state->hdr == "hdr10") info.hdrType = StreamHdrType::HDR_TYPE_HDR10;
++  else if (m_state->hdr == "hlg") info.hdrType = StreamHdrType::HDR_TYPE_HLG;
++}
++float CTVOSAetherPlayer::GetRenderAspectRatio() const
++{ std::lock_guard lock(m_lock); return m_state->height > 0 ? float(m_state->width) / m_state->height : 1; }
++bool CTVOSAetherPlayer::IsRenderingVideo() const { return m_playing; }
++bool CTVOSAetherPlayer::IsCaching() const { std::lock_guard lock(m_lock); return m_state->status == "loading"; }
++void CTVOSAetherPlayer::GetRects(CRect& source, CRect& dest, CRect& view) const
++{ std::lock_guard lock(m_lock); source = m_state->source; dest = m_state->dest; view = m_state->view; }
++bool CTVOSAetherPlayer::HasVisibleOverlay() const
++{ std::lock_guard lock(m_lock); return m_state->visible && m_state->overlays.HasVisibleOverlay(0); }
++void CTVOSAetherPlayer::SetSubtitleVerticalPosition(int value, bool save)
++{
++  // PrepareOverlays calls back here while Render holds the player-state lock.
++  // The overlay renderer protects its own state with a recursive lock.
++  m_state->overlays.SetSubtitleVerticalPosition(value, save);
++}
++void CTVOSAetherPlayer::GetAudioCapabilities(std::vector<IPlayerAudioCaps>& caps) const
++{ caps = {IPlayerAudioCaps::SELECT_STREAM, IPlayerAudioCaps::OFFSET}; }
++void CTVOSAetherPlayer::GetSubtitleCapabilities(std::vector<IPlayerSubtitleCaps>& caps) const
++{ caps = {IPlayerSubtitleCaps::SELECT_STREAM, IPlayerSubtitleCaps::EXTERNAL, IPlayerSubtitleCaps::OFFSET}; }
++CVideoSettings CTVOSAetherPlayer::GetVideoSettings() const { std::lock_guard lock(m_lock); return m_state->settings; }
++void CTVOSAetherPlayer::SetVideoSettings(CVideoSettings& settings)
++{
++  { std::lock_guard lock(m_lock); m_state->settings = settings; }
++  SetAVDelay(settings.m_AudioDelay); SetSubTitleDelay(settings.m_SubtitleDelay);
++  if (settings.m_AudioStream >= 0) SetAudioStream(settings.m_AudioStream);
++  if (settings.m_SubtitleStream >= 0) SetSubtitle(settings.m_SubtitleStream);
++  SetSubtitleVisible(settings.m_SubtitleOn);
++}
++
++void CTVOSAetherPlayer::Render(bool clear, uint32_t alpha, bool gui)
++{
++  if (!gui || !m_playing) return;
++  @autoreleasepool
++  {
++    std::lock_guard lock(m_lock);
++    auto& state = *m_state;
++    if (state.external) return;
++    auto& gfx = CServiceBroker::GetWinSystem()->GetGfxContext();
++    if (clear) gfx.Clear(0);
++    state.source = CRect(0, 0, state.width, state.height);
++    state.view = gfx.GetViewWindow();
++    if (!state.renderReported)
++    {
++      state.renderReported = true;
++      CLog::Log(LOGINFO, "DexAether v11 Kodi render: fullscreen={}, rect={}x{}",
++                gfx.IsFullScreenVideo(), state.view.Width(), state.view.Height());
++    }
++    state.dest = state.view;
++    const float aspect = state.height > 0 ? float(state.width) / state.height : 16.0f / 9;
++    if (state.view.Height() > 0 && state.view.Width() / state.view.Height() > aspect)
++    { float width = state.view.Height() * aspect; state.dest.x1 += (state.view.Width() - width) / 2; state.dest.x2 = state.dest.x1 + width; }
++    else if (aspect > 0)
++    { float height = state.view.Width() / aspect; state.dest.y1 += (state.view.Height() - height) / 2; state.dest.y2 = state.dest.y1 + height; }
++    if (state.view != state.lastNativeRect && gfx.GetWidth() > 0 && gfx.GetHeight() > 0)
++    {
++      state.lastNativeRect = state.view;
++      NSDictionary* request = @{@"token": NS(state.token), @"name": @"rect",
++          @"x": @(state.view.x1 / gfx.GetWidth()), @"y": @(state.view.y1 / gfx.GetHeight()),
++          @"width": @(state.view.Width() / gfx.GetWidth()), @"height": @(state.view.Height() / gfx.GetHeight())};
++      const std::string engineName = m_name;
++      dispatch_async(dispatch_get_main_queue(), ^{ [Bridge(engineName, false) command:request]; });
++    }
++    const std::string text = ActiveText(state);
++    if (text != state.lastText)
++    {
++      state.text.FlushSubtitles();
++      state.lastText = text;
++      if (!text.empty())
++      {
++        std::string escaped;
++        for (char c : text)
++          if (c == '\n') escaped += "\\N";
++          else if (c == '{' || c == '}' || c == '\\') { escaped += '\\'; escaped += c; }
++          else escaped += c;
++        state.text.AddSubtitle(escaped, 0, 24.0 * 3600 * 1000000);
++      }
++      OVERLAY::MarkDirty();
++    }
++    state.overlays.Release(0);
++    state.overlays.SetVideoRect(state.source, state.dest, state.view);
++    state.overlays.AddOverlay(state.overlay, 1000000, 0);
++    state.overlays.PrepareOverlays(0);
++    state.overlays.Render(0);
++  }
++}
+diff --git a/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h b/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h
+new file mode 100644
+index 0000000..f80fb96
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h
+@@ -0,0 +1,6 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++namespace ADDON { class CAddonMgr; }
++void PrepareDexHubBundle();
++void ActivateDexHubBundle(ADDON::CAddonMgr& manager);
++void ConfigureDexHubSkin();
+diff --git a/xbmc/platform/darwin/tvos/TVOSDexHubSetup.mm b/xbmc/platform/darwin/tvos/TVOSDexHubSetup.mm
+new file mode 100644
+index 0000000..7fd023b
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSDexHubSetup.mm
+@@ -0,0 +1,284 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "TVOSDexHubSetup.h"
++#include "ServiceBroker.h"
++#include "addons/AddonManager.h"
++#include "addons/AddonVersion.h"
++#include "addons/IAddon.h"
++#include "guilib/GUIComponent.h"
++#include "guilib/GUIWindow.h"
++#include "guilib/GUIWindowManager.h"
++#include "guilib/WindowIDs.h"
++#include "platform/darwin/tvos/filesystem/TVOSFileUtils.h"
++#include "settings/Settings.h"
++#include "settings/SettingsComponent.h"
++#include "utils/log.h"
++#include "utils/Variant.h"
++#import <Foundation/Foundation.h>
++
++namespace
++{
++bool bundleReady = false;
++NSString* Home()
++{
++  return [NSString stringWithUTF8String:CTVOSFileUtils::GetUserHomeDirectory()];
++}
++NSDictionary* Manifest()
++{
++  NSString* path = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"AppData/DexHubBundle.json"];
++  NSData* data = [NSData dataWithContentsOfFile:path];
++  id value = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
++  return [value isKindOfClass:NSDictionary.class] ? value : nil;
++}
++NSString* Pending() { return [Home() stringByAppendingPathComponent:@"dexhub-restore-pending"]; }
++NSMutableDictionary* RestoreManifest()
++{
++  NSData* data = [NSData dataWithContentsOfFile:[Pending() stringByAppendingPathComponent:@"manifest.json"]];
++  id value = data ? [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil] : nil;
++  if (![value isKindOfClass:NSMutableDictionary.class] || ![value[@"format"] isEqual:@"dexhub_full_backup"] || [value[@"version"] intValue] != 1) return nil;
++  NSSet* allowed = [NSSet setWithArray:@[@"plugin.video.dexhub.tvos", @"skin.dexhub.tvos", @"script.dexhub.tvos.players", @"plugin.video.themoviedb.helper", @"script.skinvariables"]];
++  if (![value[@"roots"] isKindOfClass:NSArray.class]) return nil;
++  for (NSString* identifier in value[@"roots"]) if (![allowed containsObject:identifier]) return nil;
++  return value;
++}
++void PrepareRestore()
++{
++  NSMutableDictionary* manifest = RestoreManifest();
++  if (!manifest || [manifest[@"prepared"] boolValue]) return;
++  NSFileManager* files = NSFileManager.defaultManager;
++  NSString* dataRoot = [Home() stringByAppendingPathComponent:@"userdata/addon_data"];
++  NSString* backups = [Home() stringByAppendingPathComponent:[@"dexhub-restore-backups/" stringByAppendingString:NSUUID.UUID.UUIDString]];
++  [files createDirectoryAtPath:dataRoot withIntermediateDirectories:YES attributes:nil error:nil];
++  [files createDirectoryAtPath:backups withIntermediateDirectories:YES attributes:nil error:nil];
++  NSMutableArray* changed = [NSMutableArray array];
++  NSUserDefaults* defaults = NSUserDefaults.standardUserDefaults;
++  NSMutableDictionary* oldDefaults = [NSMutableDictionary dictionary];
++  NSMutableArray* prefixes = [NSMutableArray array];
++  for (NSString* identifier in manifest[@"roots"])
++    [prefixes addObject:[NSString stringWithFormat:@"/userdata/addon_data/%@/", identifier]];
++  for (NSString* key in defaults.dictionaryRepresentation)
++    for (NSString* prefix in prefixes)
++      if ([key hasPrefix:prefix]) oldDefaults[key] = [defaults objectForKey:key];
++  NSData* oldData = [NSPropertyListSerialization dataWithPropertyList:oldDefaults format:NSPropertyListBinaryFormat_v1_0 options:0 error:nil];
++  if (!oldData || ![oldData writeToFile:[backups stringByAppendingPathComponent:@"NSUserDefaults.plist"] options:NSDataWritingAtomic error:nil])
++  { CLog::Log(LOGERROR, "DexHub restore: unable to back up persistent XML"); return; }
++  bool success = true;
++  for (NSString* identifier in manifest[@"roots"])
++  {
++    NSString* source = [[Pending() stringByAppendingPathComponent:@"profiles"] stringByAppendingPathComponent:identifier];
++    NSString* destination = [dataRoot stringByAppendingPathComponent:identifier];
++    NSString* previous = [backups stringByAppendingPathComponent:identifier];
++    NSString* temporary = [dataRoot stringByAppendingPathComponent:[@".restore-" stringByAppendingString:NSUUID.UUID.UUIDString]];
++    BOOL hadPrevious = [files fileExistsAtPath:destination];
++    if (![files copyItemAtPath:source toPath:temporary error:nil]) { success = false; break; }
++    if (hadPrevious && ![files moveItemAtPath:destination toPath:previous error:nil])
++    { [files removeItemAtPath:temporary error:nil]; success = false; break; }
++    if (![files moveItemAtPath:temporary toPath:destination error:nil])
++    {
++      if (hadPrevious) [files moveItemAtPath:previous toPath:destination error:nil];
++      [files removeItemAtPath:temporary error:nil]; success = false; break;
++    }
++    [changed addObject:@{@"destination":destination, @"previous":previous, @"hadPrevious":@(hadPrevious)}];
++  }
++  if (success)
++  {
++    for (NSString* key in oldDefaults) [defaults removeObjectForKey:key];
++    for (NSString* name in manifest[@"files"])
++    {
++      if (![name hasPrefix:@"profiles/"] || ![name.pathExtension.lowercaseString isEqual:@"xml"]) continue;
++      NSString* relative = [name substringFromIndex:9];
++      NSData* xml = [NSData dataWithContentsOfFile:[Pending() stringByAppendingPathComponent:name]];
++      if (!xml) { success = false; break; }
++      [defaults setObject:xml forKey:[@"/userdata/addon_data/" stringByAppendingString:relative]];
++    }
++    success = success && [defaults synchronize];
++  }
++  if (success)
++  {
++    manifest[@"prepared"] = @YES;
++    NSData* data = [NSJSONSerialization dataWithJSONObject:manifest options:0 error:nil];
++    success = data && [data writeToFile:[Pending() stringByAppendingPathComponent:@"manifest.json"] options:NSDataWritingAtomic error:nil];
++  }
++  if (!success)
++  {
++    for (NSString* key in defaults.dictionaryRepresentation)
++      for (NSString* prefix in prefixes)
++        if ([key hasPrefix:prefix]) [defaults removeObjectForKey:key];
++    for (NSString* key in oldDefaults) [defaults setObject:oldDefaults[key] forKey:key];
++    [defaults synchronize];
++    for (NSDictionary* item in changed.reverseObjectEnumerator)
++    {
++      [files removeItemAtPath:item[@"destination"] error:nil];
++      if ([item[@"hadPrevious"] boolValue]) [files moveItemAtPath:item[@"previous"] toPath:item[@"destination"] error:nil];
++    }
++    CLog::Log(LOGERROR, "DexHub restore: preparation failed; previous profiles restored");
++  }
++}
++void FinishRestore(ADDON::CAddonMgr& manager)
++{
++  NSDictionary* manifest = RestoreManifest();
++  if (!manifest || ![manifest[@"prepared"] boolValue]) return;
++  bool success = true;
++  for (NSString* identifier in manifest[@"roots"])
++  {
++    ADDON::AddonPtr addon;
++    if (!manager.GetAddon(identifier.UTF8String, addon, ADDON::OnlyEnabled::CHOICE_NO)) { success = false; continue; }
++    NSDictionary* values = manifest[@"settings"][identifier];
++    // Skin strings/bools have their own XML schema, already restored before loading.
++    if ([identifier isEqual:@"skin.dexhub.tvos"]) continue;
++    for (NSString* key in values)
++      addon->UpdateSetting(key.UTF8String, [values[key] UTF8String]);
++    if (values.count && !addon->SaveSettings()) success = false;
++  }
++  NSFileManager* files = NSFileManager.defaultManager;
++  NSString* fonts = [Home() stringByAppendingPathComponent:@"media/Fonts"];
++  NSString* source = [Pending() stringByAppendingPathComponent:@"fonts"];
++  [files createDirectoryAtPath:fonts withIntermediateDirectories:YES attributes:nil error:nil];
++  for (NSString* name in [files contentsOfDirectoryAtPath:source error:nil])
++  {
++    NSString* destination = [fonts stringByAppendingPathComponent:name];
++    if (![files fileExistsAtPath:destination] && ![files copyItemAtPath:[source stringByAppendingPathComponent:name] toPath:destination error:nil]) success = false;
++  }
++  NSData* core = [NSJSONSerialization dataWithJSONObject:manifest[@"core"] ?: @{} options:0 error:nil];
++  if (!core || ![core writeToFile:[Home() stringByAppendingPathComponent:@"dexhub-restored-core.json"] options:NSDataWritingAtomic error:nil]) success = false;
++  if (success)
++  {
++    [files removeItemAtPath:Pending() error:nil];
++    CLog::Log(LOGINFO, "DexHub restore: addon profiles and settings restored");
++  }
++  else CLog::Log(LOGERROR, "DexHub restore: settings incomplete; will retry at next startup");
++}
++NSString* Version(NSString* path)
++{
++  NSString* xml = [NSString stringWithContentsOfFile:[path stringByAppendingPathComponent:@"addon.xml"] encoding:NSUTF8StringEncoding error:nil];
++  if (!xml) return nil;
++  NSRegularExpression* pattern = [NSRegularExpression regularExpressionWithPattern:@"<addon\\s[^>]*\\bversion=[\"']([^\"']+)[\"']" options:0 error:nil];
++  NSTextCheckingResult* match = [pattern firstMatchInString:xml options:0 range:NSMakeRange(0, xml.length)];
++  return match ? [xml substringWithRange:[match rangeAtIndex:1]] : nil;
++}
++}
++
++void PrepareDexHubBundle()
++{
++  @autoreleasepool
++  {
++    PrepareRestore();
++    NSDictionary* manifest = Manifest();
++    NSFileManager* files = NSFileManager.defaultManager;
++    NSString* bundled = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"AppData/AppHome/addons"];
++    NSString* addons = [Home() stringByAppendingPathComponent:@"addons"];
++    [files createDirectoryAtPath:addons withIntermediateDirectories:YES attributes:nil error:nil];
++    NSString* backups = [Home() stringByAppendingPathComponent:@"dexhub-addon-backups"];
++    for (NSDictionary* entry in manifest[@"addons"])
++    {
++      NSString* identifier = entry[@"id"];
++      NSString* version = entry[@"version"];
++      if (![identifier isKindOfClass:NSString.class] || [identifier containsString:@"/"] || ![version isKindOfClass:NSString.class]) continue;
++      NSString* source = [bundled stringByAppendingPathComponent:identifier];
++      NSString* destination = [addons stringByAppendingPathComponent:identifier];
++      NSString* installed = Version(destination);
++      if (installed && ADDON::CAddonVersion(installed.UTF8String) >= ADDON::CAddonVersion(version.UTF8String)) continue;
++      NSString* temporary = [addons stringByAppendingPathComponent:[@".dexhub-" stringByAppendingString:NSUUID.UUID.UUIDString]];
++      NSError* error = nil;
++      if (![files copyItemAtPath:source toPath:temporary error:&error])
++      {
++        CLog::Log(LOGERROR, "DexHub setup: unable to stage {} (error {})", identifier.UTF8String, error.code);
++        continue;
++      }
++      NSString* previous = nil;
++      if ([files fileExistsAtPath:destination])
++      {
++        [files createDirectoryAtPath:backups withIntermediateDirectories:YES attributes:nil error:nil];
++        previous = [backups stringByAppendingPathComponent:[identifier stringByAppendingFormat:@"-%@", NSUUID.UUID.UUIDString]];
++        if (![files moveItemAtPath:destination toPath:previous error:&error])
++        {
++          [files removeItemAtPath:temporary error:nil];
++          CLog::Log(LOGERROR, "DexHub setup: unable to back up {}", identifier.UTF8String);
++          continue;
++        }
++      }
++      if (![files moveItemAtPath:temporary toPath:destination error:&error])
++      {
++        if (previous) [files moveItemAtPath:previous toPath:destination error:nil];
++        [files removeItemAtPath:temporary error:nil];
++        CLog::Log(LOGERROR, "DexHub setup: unable to install {}", identifier.UTF8String);
++      }
++      else CLog::Log(LOGINFO, "DexHub setup: installed {} {}", identifier.UTF8String, version.UTF8String);
++    }
++    NSString* fonts = [Home() stringByAppendingPathComponent:@"media/Fonts"];
++    NSString* fontSource = [[NSBundle mainBundle].bundlePath stringByAppendingPathComponent:@"AppData/DexHubFonts"];
++    [files createDirectoryAtPath:fonts withIntermediateDirectories:YES attributes:nil error:nil];
++    for (NSString* name in [files contentsOfDirectoryAtPath:fontSource error:nil])
++    {
++      NSString* destination = [fonts stringByAppendingPathComponent:name];
++      if (![files fileExistsAtPath:destination])
++      {
++        NSError* error = nil;
++        if (![files copyItemAtPath:[fontSource stringByAppendingPathComponent:name] toPath:destination error:&error])
++          CLog::Log(LOGERROR, "DexHub setup: unable to copy font {}", name.UTF8String);
++      }
++    }
++  }
++}
++
++void ActivateDexHubBundle(ADDON::CAddonMgr& manager)
++{
++  @autoreleasepool
++  {
++    FinishRestore(manager);
++    NSDictionary* manifest = Manifest();
++    bool success = manifest != nil;
++    for (NSDictionary* entry in manifest[@"addons"])
++    {
++      NSString* identifier = entry[@"id"];
++      const std::string id = identifier.UTF8String;
++      if (!manager.EnableAddon(id) || manager.IsAddonDisabled(id))
++      {
++        success = false;
++        CLog::Log(LOGERROR, "DexHub setup: {} could not be enabled", id);
++      }
++    }
++    ADDON::AddonPtr repository;
++    const std::string repositoryId = "repository.dexworld.appletv";
++    if (manager.GetAddon(repositoryId, repository, ADDON::OnlyEnabled::CHOICE_YES))
++    {
++      for (const std::string id : {"plugin.video.dexhub.tvos", "skin.dexhub.tvos",
++                                   "script.dexhub.tvos.players"})
++      {
++        ADDON::AddonPtr addon;
++        if (!manager.GetAddon(id, addon, ADDON::OnlyEnabled::CHOICE_NO))
++          continue;
++        const std::string origin = addon->Origin();
++        if (origin.empty() || origin == "repository.dexhub" || origin == ADDON::ORIGIN_SYSTEM)
++          manager.SetAddonOrigin(id, repositoryId, false);
++      }
++    }
++    bundleReady = success;
++  }
++}
++
++void ConfigureDexHubSkin()
++{
++  @autoreleasepool
++  {
++    if (!bundleReady || !CServiceBroker::GetGUI())
++      return;
++    // Advertise the GUI append contract to the bundled add-on on every launch.
++    // Stock Kodi keeps the add-on's compatibility selection-restore path.
++    if (auto* home = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(WINDOW_HOME))
++      home->SetProperty("dexhub.tvos.stableappend", CVariant("1"));
++    NSString* key = @"DexHubDefaultSkinConfigured-v13";
++    if (![NSUserDefaults.standardUserDefaults boolForKey:key])
++    {
++      auto settings = CServiceBroker::GetSettingsComponent()->GetSettings();
++      if (settings->SetString("lookandfeel.skin", "skin.dexhub.tvos"))
++      {
++        settings->SetInt("general.addonupdates", 0);
++        if (settings->Save())
++        {
++          [NSUserDefaults.standardUserDefaults setBool:YES forKey:key];
++          CLog::Log(LOGINFO, "DexHub startup fix v16: default skin configured after GUI initialization");
++        }
++      }
++    }
++  }
++}
+diff --git a/xbmc/platform/darwin/tvos/TVOSExternalApp.h b/xbmc/platform/darwin/tvos/TVOSExternalApp.h
+new file mode 100644
+index 0000000..bd519ca
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSExternalApp.h
+@@ -0,0 +1,23 @@
++/*
++ *  Copyright (C) 2026 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#pragma once
++
++#include <string>
++
++class CTVOSExternalApp
++{
++public:
++  /*!
++   \brief Open another installed tvOS app via its custom URL scheme.
++   \param url a full url, e.g. "infuse://x-callback-url/play?url=...&sub=..."
++   \return true if the open request was dispatched to the system
++   */
++  static bool OpenURL(const std::string& url);
++  static bool HandleURL(const std::string& url);
++};
+diff --git a/xbmc/platform/darwin/tvos/TVOSExternalApp.mm b/xbmc/platform/darwin/tvos/TVOSExternalApp.mm
+new file mode 100644
+index 0000000..e399888
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSExternalApp.mm
+@@ -0,0 +1,108 @@
++/*
++ *  Copyright (C) 2026 Team Kodi
++ *  This file is part of Kodi - https://kodi.tv
++ *
++ *  SPDX-License-Identifier: GPL-2.0-or-later
++ *  See LICENSES/README.md for more information.
++ */
++
++#import "TVOSExternalApp.h"
++#include "platform/darwin/tvos/filesystem/TVOSFileUtils.h"
++
++#import "utils/log.h"
++#include "ServiceBroker.h"
++#include "messaging/ApplicationMessenger.h"
++
++#import <UIKit/UIKit.h>
++
++bool CTVOSExternalApp::OpenURL(const std::string& url)
++{
++  if (url.empty())
++    return false;
++
++  NSString* urlString = [NSString stringWithUTF8String:url.c_str()];
++  NSURL* nsUrl = [NSURL URLWithString:urlString];
++  if (nsUrl == nil)
++  {
++    CLog::Log(LOGERROR, "CTVOSExternalApp::OpenURL - invalid url");
++    return false;
++  }
++
++  // DexAetherBridge managed handoff v2.
++  // DexHub external handoff: stop Kodi only after successful system launch.
++  if ([[nsUrl scheme] isEqualToString:@"dex-external"])
++  {
++    NSURLComponents* components = [NSURLComponents componentsWithURL:nsUrl resolvingAgainstBaseURL:NO];
++    NSURL* target = nil;
++    for (NSURLQueryItem* item in components.queryItems)
++      if ([item.name isEqualToString:@"target"] && item.value)
++        target = [NSURL URLWithString:item.value];
++    // v21.3: every external player DexHub can hand a video to
++    NSSet* allowed = [NSSet setWithArray:@[@"infuse", @"open-vidhub", @"senplayer", @"vlc-x-callback",
++        @"outplayer", @"nplayer-http", @"nplayer-https", @"nativeplayer"]];
++    if (!target || ![allowed containsObject:[[target scheme] lowercaseString]])
++      return false;
++    dispatch_async(dispatch_get_main_queue(), ^{
++      [[UIApplication sharedApplication] openURL:target options:@{} completionHandler:^(BOOL success) {
++        if (success)
++          CServiceBroker::GetAppMessenger()->PostMsg(TMSG_MEDIA_STOP);
++        else
++        {
++          UIViewController* root = [UIApplication sharedApplication].keyWindow.rootViewController;
++          while (root.presentedViewController)
++            root = root.presentedViewController;
++          UIAlertController* alert = [UIAlertController alertControllerWithTitle:@"External player"
++              message:@"Unable to open the selected app. Check that it is installed."
++              preferredStyle:UIAlertControllerStyleAlert];
++          [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
++          [root presentViewController:alert animated:YES completion:nil];
++        }
++      }];
++    });
++    return true;
++  }
++
++  // openURL must run on the main thread
++  dispatch_async(dispatch_get_main_queue(), ^{
++    UIApplication* application = [UIApplication sharedApplication];
++    [application openURL:nsUrl
++                    options:@{}
++          completionHandler:^(BOOL success) {
++            if (success)
++              CLog::Log(LOGINFO, "CTVOSExternalApp::OpenURL - launched external app");
++            else
++              CLog::Log(LOGERROR, "CTVOSExternalApp::OpenURL - open failed (target app not "
++                                  "installed or scheme not supported)");
++          }];
++  });
++
++  return true;
++}
++
++bool CTVOSExternalApp::HandleURL(const std::string& url)
++{
++  NSURLComponents* components = [NSURLComponents componentsWithString:
++      [NSString stringWithUTF8String:url.c_str()]];
++  if (![components.scheme isEqualToString:@"dexhub-player"] ||
++      (![components.host isEqualToString:@"success"] &&
++       ![components.host isEqualToString:@"error"]))
++    return false;
++  NSMutableDictionary* payload = [NSMutableDictionary dictionary];
++  payload[@"status"] = components.host;
++  for (NSURLQueryItem* item in components.queryItems)
++    if (item.value && ([@[@"token", @"position", @"lastPlayedUrl", @"errorCode"]
++        containsObject:item.name]))
++      payload[item.name] = item.value;
++  if (![payload[@"token"] length])
++    return true;
++  NSString* home = [NSString stringWithUTF8String:CTVOSFileUtils::GetUserHomeDirectory()];
++  [[NSFileManager defaultManager] createDirectoryAtPath:home withIntermediateDirectories:YES
++      attributes:nil error:nullptr];
++  NSData* data = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nullptr];
++  if (![data writeToFile:[home stringByAppendingPathComponent:@"dexhub-infuse-return.json"]
++      options:NSDataWritingAtomic error:nullptr])
++    CLog::Log(LOGERROR, "DexHub Infuse return could not be saved");
++  else
++    CLog::Log(LOGINFO, "DexHub Infuse return received ({})", components.host.UTF8String);
++  return true;
++}
+diff --git a/xbmc/platform/darwin/tvos/TVOSNativeHome.h b/xbmc/platform/darwin/tvos/TVOSNativeHome.h
+new file mode 100644
+index 0000000..3586a2c
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSNativeHome.h
+@@ -0,0 +1,8 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++
++class CTVOSNativeHome
++{
++public:
++  static void FrameMove();
++};
+diff --git a/xbmc/platform/darwin/tvos/TVOSNativeHome.mm b/xbmc/platform/darwin/tvos/TVOSNativeHome.mm
+new file mode 100644
+index 0000000..3ff490f
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSNativeHome.mm
+@@ -0,0 +1,269 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "TVOSNativeHome.h"
++
++#include "LangInfo.h"
++#include "ServiceBroker.h"
++#include "XBMCController.h"
++#include "application/Application.h"
++#include "application/ApplicationComponents.h"
++#include "application/ApplicationPlayer.h"
++#include "application/ApplicationPowerHandling.h"
++#include "filesystem/SpecialProtocol.h"
++#include "guilib/GUIComponent.h"
++#include "guilib/GUIWindow.h"
++#include "guilib/GUIWindowManager.h"
++#include "guilib/WindowIDs.h"
++#include "messaging/ApplicationMessenger.h"
++#include "utils/Variant.h"
++#include "utils/log.h"
++
++#import <Foundation/Foundation.h>
++#import <UIKit/UIKit.h>
++
++#include <atomic>
++#include <chrono>
++#include <cstdlib>
++#include <mutex>
++
++@interface NSObject (DexNativeHomeAPI)
+++ (void)suspend;
+++ (BOOL)presentFrom:(UIViewController*)parent
++       profileRoot:(NSString*)profileRoot
++          artRoots:(NSDictionary*)artRoots
++          language:(NSString*)language
++           perform:(void (^)(NSString*))perform;
++@end
++
++namespace
++{
++enum class Mode { Waiting, Queued, Visible, Handoff, Kodi };
++std::atomic<Mode> mode{Mode::Waiting};
++std::atomic<unsigned int> handoffs{0};
++std::atomic<bool> activity{false};
++std::atomic<bool> viewportDirty{false};
++std::mutex viewportLock;
++std::string viewportTab{"all"}, viewportRow;
++
++NSString* NS(const std::string& text) { return [NSString stringWithUTF8String:text.c_str()]; }
++
++void Perform(NSString* json)
++{
++  NSData* data = [json dataUsingEncoding:NSUTF8StringEncoding];
++  id parsed = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
++  if (![parsed isKindOfClass:[NSDictionary class]])
++  {
++    mode = Mode::Kodi;
++    return;
++  }
++  NSString* kind = parsed[@"kind"];
++  NSString* path = parsed[@"path"];
++  if ([kind isEqualToString:@"viewport"])
++  {
++    if (![path isKindOfClass:[NSString class]])
++      return;
++    NSRange separator = [path rangeOfString:@":"];
++    if (separator.location == NSNotFound)
++      return;
++    NSString* tab = [path substringToIndex:separator.location];
++    if (![@[@"all", @"movie", @"series", @"library", @"servers"] containsObject:tab])
++      return;
++    {
++      std::lock_guard lock(viewportLock);
++      viewportTab = tab.UTF8String;
++      viewportRow = [path substringFromIndex:separator.location + 1].UTF8String;
++    }
++    viewportDirty = true;
++    return;
++  }
++  if ([kind isEqualToString:@"activity"])
++  {
++    activity = true;
++    return;
++  }
++  mode = Mode::Handoff;
++  [g_xbmcController resumeAnimation];
++  if ([kind isEqualToString:@"kodi"])
++  {
++    mode = Mode::Kodi;
++    return;
++  }
++  if (![path isKindOfClass:[NSString class]] || path.length == 0)
++  {
++    mode = Mode::Kodi;
++    return;
++  }
++  const bool folder = [kind isEqualToString:@"folder"];
++  const bool play = [kind isEqualToString:@"play"];
++  const bool run = [kind isEqualToString:@"run"];
++  NSString* scheme = [[path componentsSeparatedByString:@":"] firstObject].lowercaseString;
++  const bool mediaPath = [@[@"http", @"https", @"plugin", @"file", @"smb", @"nfs",
++                           @"special", @"videodb", @"musicdb", @"stack"] containsObject:scheme] ||
++      [path hasPrefix:@"/"];
++  if ((!folder && !play && !run) ||
++      (run && ![path hasPrefix:@"plugin://plugin.video.dexhub.tvos/"]) ||
++      ((play || folder) && !mediaPath))
++  {
++    mode = Mode::Kodi;
++    return;
++  }
++  NSString* escaped = [path stringByReplacingOccurrencesOfString:@"\"" withString:@"%22"];
++  const bool homeFolder = [path containsString:@"action=skin_folder"];
++  NSString* command = play ? [NSString stringWithFormat:@"PlayMedia(\"%@\")", escaped]
++      : folder && !homeFolder ? [NSString stringWithFormat:@"ActivateWindow(Videos,\"%@\",return)", escaped]
++      : [NSString stringWithFormat:@"RunPlugin(\"%@\")", escaped];
++  handoffs.fetch_add(1);
++  mode = Mode::Handoff;
++  CServiceBroker::GetAppMessenger()->PostMsg(TMSG_EXECUTE_BUILT_IN, 0, 0, nullptr,
++                                             std::string(command.UTF8String));
++}
++
++void Present()
++{
++  dispatch_async(dispatch_get_main_queue(), ^{
++    if (mode != Mode::Queued)
++      return;
++    if (UIApplication.sharedApplication.applicationState != UIApplicationStateActive ||
++        g_xbmcController.presentedViewController || !g_xbmcController.view.window)
++    {
++      mode = Mode::Waiting;
++      return;
++    }
++    Class ui = NSClassFromString(@"DexNativeHome");
++    if (!ui)
++    {
++      NSString* path = [NSBundle.mainBundle.privateFrameworksPath
++          stringByAppendingPathComponent:@"DexAetherBridge.framework"];
++      NSError* error = nil;
++      if (![[NSBundle bundleWithPath:path] loadAndReturnError:&error])
++      {
++        CLog::Log(LOGERROR, "Dex native Home: UI framework could not be loaded");
++        mode = Mode::Kodi;
++        return;
++      }
++      ui = NSClassFromString(@"DexNativeHome");
++    }
++    if (![ui respondsToSelector:@selector(presentFrom:profileRoot:artRoots:language:perform:)])
++    {
++      mode = Mode::Kodi;
++      return;
++    }
++    NSMutableDictionary* roots = [NSMutableDictionary dictionary];
++    for (const char* prefix : {"special://home/", "special://xbmc/", "special://profile/", "special://temp/"})
++      roots[NS(prefix)] = NS(CSpecialProtocol::TranslatePath(prefix));
++    NSString* profile = NS(CSpecialProtocol::TranslatePath(
++        "special://profile/addon_data/plugin.video.dexhub.tvos/"));
++    mode = Mode::Visible;
++    BOOL shown = [ui presentFrom:g_xbmcController profileRoot:profile artRoots:roots
++                        language:NS(g_langInfo.GetEnglishLanguageName())
++                         perform:^(NSString* command) { Perform(command); }];
++    if (!shown)
++      mode = Mode::Waiting;
++    // Full-screen presentation pauses Kodi's GUI through viewWillDisappear.
++    // Its event loop and add-on workers continue while UIKit owns navigation.
++  });
++}
++}
++
++void CTVOSNativeHome::FrameMove()
++{
++  if (!g_application.IsInitialized())
++    return;
++  auto* gui = CServiceBroker::GetGUI();
++  if (!gui)
++    return;
++  auto& windows = gui->GetWindowManager();
++  auto* home = windows.GetWindow(WINDOW_HOME);
++  if (home && viewportDirty.exchange(false))
++  {
++    std::string tab, row;
++    {
++      std::lock_guard lock(viewportLock);
++      tab = viewportTab;
++      row = viewportRow;
++    }
++    home->SetProperty("dhs.tab", CVariant(tab));
++    int slot = 1;
++    for (int n = 1; n <= 20 && !row.empty(); ++n)
++      if (home->GetProperty("dhs." + tab + "." + std::to_string(n) + ".id").asString() == row)
++      {
++        slot = n;
++        break;
++      }
++    home->SetProperty("dhs.fr", CVariant(std::to_string(slot)));
++  }
++  static Mode marked = Mode::Kodi;
++  const Mode current = mode.load();
++  if (home && current != marked)
++  {
++    if (current == Mode::Visible || current == Mode::Queued)
++      home->SetProperty("dexhub.native.active", CVariant("1"));
++    else
++      home->SetProperty("dexhub.native.active", CVariant(""));
++    marked = current;
++  }
++  if (mode == Mode::Visible)
++  {
++    const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
++    const bool trailer = home && !home->GetProperty("dexhub.trailer.active").asString().empty();
++    static auto lastTrailerStop = std::chrono::steady_clock::time_point::min();
++    const auto now = std::chrono::steady_clock::now();
++    if (trailer && player->IsPlaying() && now > lastTrailerStop)
++    {
++      lastTrailerStop = now + std::chrono::seconds(1);
++      CServiceBroker::GetAppMessenger()->PostMsg(TMSG_MEDIA_STOP);
++    }
++    if (player->IsPlaying() && !trailer)
++    {
++      handoffs.fetch_add(1);
++      mode = Mode::Handoff;
++      dispatch_async(dispatch_get_main_queue(), ^{
++        [NSClassFromString(@"DexNativeHome") suspend];
++        [g_xbmcController resumeAnimation];
++      });
++      return;
++    }
++    const auto power = CServiceBroker::GetAppComponents().GetComponent<CApplicationPowerHandling>();
++    if (power->GetRenderGUI())
++      power->SetRenderGUI(false);
++  }
++  if (activity.exchange(false))
++  {
++    const auto power = CServiceBroker::GetAppComponents().GetComponent<CApplicationPowerHandling>();
++    power->ResetSystemIdleTimer();
++    power->ResetScreenSaver();
++  }
++  static const bool enabled = !std::getenv("DEX_NATIVE_HOME") ||
++      std::string(std::getenv("DEX_NATIVE_HOME")) != "0";
++  if (!enabled || mode == Mode::Visible || mode == Mode::Queued || mode == Mode::Kodi)
++    return;
++  const auto now = std::chrono::steady_clock::now();
++  static auto next = now;
++  if (now < next)
++    return;
++  next = now + std::chrono::milliseconds(500);
++  const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
++  const bool trailer = home && !home->GetProperty("dexhub.trailer.active").asString().empty();
++  const bool atHome = windows.GetActiveWindow() == WINDOW_HOME &&
++      !windows.HasVisibleModalDialog() && (!player->IsPlaying() || trailer);
++  static unsigned int observedHandoff = 0;
++  static bool sawOtherScreen = false;
++  if (mode == Mode::Handoff)
++  {
++    if (observedHandoff != handoffs.load())
++    {
++      observedHandoff = handoffs.load();
++      sawOtherScreen = false;
++    }
++    if (!atHome)
++      sawOtherScreen = true;
++    if (!sawOtherScreen)
++      return;
++  }
++  if (!atHome || !home || home->GetProperty("dhs.ready").asString().empty())
++    return;
++  mode = Mode::Queued;
++  home->SetProperty("dexhub.native.active", CVariant("1"));
++  if (trailer && player->IsPlaying())
++    CServiceBroker::GetAppMessenger()->PostMsg(TMSG_MEDIA_STOP);
++  Present();
++}
+diff --git a/xbmc/platform/darwin/tvos/TVOSNativeSkin.h b/xbmc/platform/darwin/tvos/TVOSNativeSkin.h
+new file mode 100644
+index 0000000..a0e26b2
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSNativeSkin.h
+@@ -0,0 +1,10 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++class CTVOSNativeSkin {
++public:
++  // Called only on Kodi's GUI thread, after its windows process messages.
++  static bool FrameMove();
++  static bool IsVisible();
++  static bool ShouldRenderVideo();
++  static bool SuppressWindowDraw(int windowID);
++};
+diff --git a/xbmc/platform/darwin/tvos/TVOSNativeSkin.mm b/xbmc/platform/darwin/tvos/TVOSNativeSkin.mm
+new file mode 100644
+index 0000000..ffc40b9
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSNativeSkin.mm
+@@ -0,0 +1,478 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "TVOSNativeSkin.h"
++#include "FileItem.h"
++#include "ServiceBroker.h"
++#include "TextureCache.h"
++#include "URL.h"
++#include "GUIInfoManager.h"
++#include "application/Application.h"
++#include "application/ApplicationComponents.h"
++#include "application/ApplicationPlayer.h"
++#include "guilib/GUIDialog.h"
++#include "filesystem/SpecialProtocol.h"
++#include "guilib/GUIBaseContainer.h"
++#include "guilib/GUIButtonControl.h"
++#include "guilib/GUIComponent.h"
++#include "guilib/GUIMessage.h"
++#include "guilib/GUIWindow.h"
++#include "guilib/GUIWindowManager.h"
++#include "guilib/WindowIDs.h"
++#include "guilib/guiinfo/GUIInfoLabels.h"
++#include "input/actions/Action.h"
++#include "input/actions/ActionIDs.h"
++#include "utils/Digest.h"
++#include "utils/Variant.h"
++#include "XBMCController.h"
++#import "input/LibInputHandler.h"
++#import "input/LibInputTouch.h"
++#import <UIKit/UIKit.h>
++#include <atomic>
++#include <chrono>
++#include <deque>
++#include <mutex>
++#include <cstdlib>
++#include <cmath>
++#include <vector>
++
++@interface NSObject (DexNativeSkinAPI)
+++ (BOOL)update:(NSData*)data from:(UIViewController*)parent perform:(void (^)(NSString*))perform;
+++ (void)suspend;
++@end
++
++namespace {
++std::atomic<bool> visible{false}, queued{false};
++std::atomic<unsigned long> generation{0};
++std::atomic<int> suppressedOSD{0};
++std::atomic<int> suppressedWindow{0};
++std::mutex eventLock;
++std::deque<NSDictionary*> events;
++unsigned long inputSerial = 0;
++NSData* lastSnapshot = nil;
++auto nextSnapshot = std::chrono::steady_clock::time_point{};
++int systemWindow = 0;
++std::string systemSession;
++std::string renderedInstance;
++
++NSString* NS(const std::string& value) { return [NSString stringWithUTF8String:value.c_str()] ?: @""; }
++std::string Str(NSString* value) { return [value isKindOfClass:NSString.class] ? std::string(value.UTF8String ?: "") : ""; }
++std::string Property(CGUIWindow* window, const char* name) { return window->GetProperty(name).asString(); }
++
++std::shared_ptr<CApplicationPlayer> Player() {
++  return CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
++}
++
++std::string PlaybackID() {
++  auto* gui = CServiceBroker::GetGUI();
++  auto* home = gui->GetWindowManager().GetWindow(WINDOW_HOME);
++  const auto raw = home ? Property(home, "dexhub.session_v1") : std::string{};
++  NSData* data = [NS(raw) dataUsingEncoding:NSUTF8StringEncoding];
++  id session = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
++  NSString* uid = [session isKindOfClass:NSDictionary.class] ? session[@"playback_uid"] : nil;
++  auto key = Str(uid);
++  if (key.empty()) key = gui->GetInfoManager().GetLabel(PLAYER_FILEPATH, WINDOW_FULLSCREEN_VIDEO) + gui->GetInfoManager().GetLabel(PLAYER_FILENAME, WINDOW_FULLSCREEN_VIDEO);
++  return KODI::UTILITY::CDigest::Calculate(KODI::UTILITY::CDigest::Type::SHA256, key + ":" + Player()->GetCurrentPlayer());
++}
++
++std::string Key(const std::shared_ptr<CGUIListItem>& item, int control, int index) {
++  if (!item) return {};
++  const auto file = std::dynamic_pointer_cast<CFileItem>(item);
++  std::string route = file ? file->GetPath() : std::string{};
++  if (route.empty()) route = item->GetProperty("key").asString() + ":" + item->GetLabel();
++  return KODI::UTILITY::CDigest::Calculate(KODI::UTILITY::CDigest::Type::SHA256,
++      std::to_string(control) + ":" + std::to_string(index) + ":" + route);
++}
++
++NSString* Art(const std::string& value) {
++  if (value.empty()) return @"";
++  if (value.front() == '/' || value.rfind("special://", 0) == 0)
++    return NS(CSpecialProtocol::TranslatePath(value));
++  if ((value.rfind("https://", 0) == 0 || value.rfind("http://", 0) == 0) && value.find('|') == std::string::npos)
++    return NS(value);
++  bool needsRecaching = false;
++  const auto cache = CServiceBroker::GetTextureCache();
++  auto cached = cache ? cache->CheckCachedImage(value, needsRecaching) : std::string{};
++  if (!cached.empty()) return NS(CSpecialProtocol::TranslatePath(cached));
++  CURL wrapped(value);
++  if (wrapped.IsProtocol("image")) {
++    auto inner = CURL::Decode(wrapped.GetHostName());
++    if ((inner.rfind("https://", 0) == 0 || inner.rfind("http://", 0) == 0) && inner.find('|') == std::string::npos)
++      return NS(inner);
++  }
++  // Keep provider headers and Kodi-specific image protocols in Kodi. The
++  // next snapshot can use the file after its original cache worker finishes.
++  if (cache) cache->BackgroundCacheImage(value);
++  return @"";
++}
++
++void QueueEvent(NSString* message) {
++  NSData* data = [message dataUsingEncoding:NSUTF8StringEncoding];
++  if (data.length > 4096) return;
++  id parsed = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
++  if (![parsed isKindOfClass:NSDictionary.class]) return;
++  std::lock_guard lock(eventLock);
++  if ([parsed[@"kind"] isEqual:@"focus"] && !events.empty() && [events.back()[@"kind"] isEqual:@"focus"])
++    events.pop_back();
++  if (events.size() < 32) events.push_back(parsed);
++}
++
++bool Matches(CGUIWindow* window, NSDictionary* event) {
++  return window && [event[@"window"] intValue] == window->GetID()
++      && Str(event[@"instance"]) == Property(window, "dexhub.native.instance");
++}
++
++int Count(CGUIBaseContainer* list) {
++  return static_cast<int>(std::strtol(list->GetLabel(CONTAINER_NUM_ALL_ITEMS).c_str(), nullptr, 10));
++}
++
++void Deliver(CGUIWindow* window) {
++  std::deque<NSDictionary*> pending;
++  { std::lock_guard lock(eventLock); pending.swap(events); }
++  for (NSDictionary* event : pending) {
++    auto& manager = CServiceBroker::GetGUI()->GetWindowManager();
++    if (manager.GetActiveWindowOrDialog() != window->GetID() || !Matches(window, event)) continue;
++    const bool player = window->GetID() == WINDOW_DIALOG_VIDEO_OSD;
++    const bool playerSettings = Property(window, "dexhub.native.kind") == "player-settings";
++    if ((player || playerSettings) && (!Player()->IsPlayingVideo() || Str(event[@"session"]) != PlaybackID())) continue;
++    if (player) static_cast<CGUIDialog*>(window)->ResetAutoClose();
++    window->SetProperty("dexhub.native.input", CVariant(std::to_string(++inputSerial)));
++    NSString* kind = event[@"kind"];
++    if ([kind isEqual:@"seek"]) {
++      const double position = [event[@"position"] isKindOfClass:NSNumber.class] ? [event[@"position"] doubleValue] : -1;
++      if (player && Player()->CanSeek() && Player()->GetTotalTime() > 0 && std::isfinite(position) && position >= 0 && position <= Player()->GetTotalTime() / 1000.0)
++        Player()->SeekTime(static_cast<int64_t>(position * 1000));
++      continue;
++    }
++    if ([kind isEqual:@"back"]) { window->OnAction(CAction(ACTION_NAV_BACK)); continue; }
++    if ([kind isEqual:@"action"]) {
++      const int action = [event[@"action"] intValue];
++      if (action == ACTION_PLAYER_PLAY && player) g_application.OnAction(CAction(action));
++      else if (action == ACTION_MOVE_UP || action == ACTION_MOVE_DOWN || action == ACTION_PLAYER_PLAY)
++        window->OnAction(CAction(action));
++      if (!(playerSettings && (action == ACTION_MOVE_LEFT || action == ACTION_MOVE_RIGHT))) continue;
++    }
++    const int controlID = [event[@"control"] intValue], index = [event[@"index"] intValue];
++    auto* control = window->GetControl(controlID);
++    const bool sourceFilter = Property(window, "dexhub.native.kind") == "sources" && controlID == 2100;
++    const bool navigation = (controlID >= 9010 && controlID <= 9016) || (controlID >= 9050 && controlID <= 9056);
++    // Icon tabs deliberately hide their button while unfocused in the XML.
++    // They remain valid destinations through allowhiddenfocus.
++    if (!control || (!navigation && !sourceFilter && !control->IsVisible()) || (!sourceFilter && !control->CanFocus())) continue;
++    if (navigation && ((controlID >= 9050) != !Property(window, "dh.nav.names").empty())) continue;
++    if ((controlID == 9013 || controlID == 9053) && !Property(window, "dh.nav.noservers").empty()) continue;
++    if (auto* list = dynamic_cast<CGUIBaseContainer*>(control)) {
++      if (index < 0 || index >= Count(list)) continue;
++      const auto item = list->GetListItem(index, INFOFLAG_LISTITEM_ABSOLUTE);
++      if (Key(item, controlID, index) != Str(event[@"key"])) continue;
++      CGUIMessage select(GUI_MSG_ITEM_SELECT, window->GetID(), controlID, index);
++      window->OnMessage(select);
++      window->SetProperty("dexhub.native.control", CVariant(std::to_string(controlID)));
++      window->SetProperty("dexhub.native.index", CVariant(std::to_string(index)));
++    } else {
++      const auto key = "button:" + std::to_string(controlID);
++      if (key != Str(event[@"key"]) && !(player && controlID == 8200 && Str(event[@"key"]) == "timeline:" + PlaybackID())) continue;
++    }
++    if (!sourceFilter) {
++      CGUIMessage focus(GUI_MSG_SETFOCUS, window->GetID(), controlID);
++      window->OnMessage(focus);
++    }
++    if ([kind isEqual:@"action"] && playerSettings) {
++      auto* list = dynamic_cast<CGUIBaseContainer*>(control);
++      const auto item = list ? list->GetListItem(index, INFOFLAG_LISTITEM_ABSOLUTE) : nullptr;
++      if (item && ((controlID == 100 && item->GetProperty("adjust").asString() == "1") || (controlID == 210 && index == 0)))
++        window->OnAction(CAction([event[@"action"] intValue]));
++    } else if ([kind isEqual:@"click"]) {
++      // Execute the original control: lists notify Python, and real Kodi
++      // buttons also execute their skin-defined onclick actions exactly once.
++      // The subtitle service list intentionally handles Select in the
++      // original window's onAction rather than following its provider URL.
++      if (playerSettings && controlID == 300) window->OnAction(CAction(ACTION_SELECT_ITEM));
++      else control->OnAction(CAction(ACTION_SELECT_ITEM));
++    } else if ([kind isEqual:@"context"]) { window->OnAction(CAction(ACTION_CONTEXT_MENU)); }
++    else if (controlID == 2000 && Property(window, "dexhub.native.kind") == "sources") {
++      CGUIMessage input(GUI_MSG_CLICKED, 2998, window->GetID(), ACTION_SELECT_ITEM);
++      window->OnMessage(input);
++    }
++  }
++}
++
++void AddList(CGUIWindow* window, NSMutableArray* sections, int id, NSString* title, NSString* style, bool hidden = false) {
++  auto* list = dynamic_cast<CGUIBaseContainer*>(window->GetControl(id));
++  if (!list || (!hidden && (!list->IsVisible() || !list->CanFocus())) || Count(list) <= 0 || Count(list) > 2000) return;
++  NSMutableArray* cards = [NSMutableArray array];
++  for (int index = 0; index < Count(list); ++index) {
++    const auto item = list->GetListItem(static_cast<int>(index), INFOFLAG_LISTITEM_ABSOLUTE);
++    if (!item) return; // Kodi has not finished binding its layout yet.
++    auto image = item->GetArt("poster");
++    if ([style containsString:@"landscape"] || [style containsString:@"wide"]) image = item->GetArt("landscape");
++    if (image.empty()) image = item->GetArt("thumb");
++    if (image.empty()) image = item->GetProperty("icon").asString();
++    NSMutableArray* collage = [NSMutableArray array];
++    for (int n = 1; n <= 6; ++n) {
++      const auto poster = item->GetProperty("p" + std::to_string(n)).asString();
++      if (!poster.empty()) [collage addObject:Art(poster)];
++    }
++    auto label = item->GetLabel(), subtitle = item->GetLabel2();
++    NSMutableArray* badges = [NSMutableArray array];
++    if ([style isEqual:@"source"]) {
++      const auto name = item->GetProperty("name").asString();
++      if (!name.empty()) label = name;
++      subtitle = item->GetProperty("origin_line").asString();
++      image = item->GetProperty("provider_icon").asString();
++      for (const char* field : {"quality", "size_label", "provider", "fmt_compact_label", "source_type_label"}) {
++        const auto value = item->GetProperty(field).asString();
++        if (!value.empty()) [badges addObject:NS(value)];
++      }
++    }
++    const bool settings = Property(window, "dexhub.native.kind") == "player-settings";
++    if ([style isEqual:@"choice"] && subtitle.empty()) {
++      subtitle = item->GetProperty("hint").asString();
++      if (subtitle.empty()) subtitle = item->GetProperty("desc").asString();
++    }
++    [cards addObject:@{@"key":NS(Key(item, id, static_cast<int>(index))), @"control":@(id), @"index":@(index),
++      @"title":NS(label), @"subtitle":NS(subtitle), @"image":Art(image), @"badges":badges,
++      @"progress":@(item->GetProperty("progress").asDouble()), @"logo":Art(item->GetArt("clearlogo")),
++      @"rank":@(item->GetProperty("rank").asInteger()), @"collage":collage,
++      @"checked":@(item->IsSelected() || item->GetProperty("current").asString() == "1"),
++      @"adjustable":@(settings && ((id == 100 && item->GetProperty("adjust").asString() == "1") || (id == 210 && index == 0)))}];
++  }
++  [sections addObject:@{@"control":@(id), @"title":title ?: @"", @"style":style,
++    @"selected":@(list->GetSelectedItem()), @"items":cards}];
++}
++
++void AddButtons(CGUIWindow* window, NSMutableArray* sections, const std::vector<int>& ids, bool player = false, NSString* style = @"buttons") {
++  NSMutableArray* cards = [NSMutableArray array];
++  auto* home = CServiceBroker::GetGUI()->GetWindowManager().GetWindow(WINDOW_HOME);
++  const bool rtl = home && Property(home, "dexhub.native.rtl") == "1";
++  NSDictionary* labels = rtl ? @{@"sources":@"المصادر", @"episodes":@"الحلقات", @"info":@"المعلومات", @"audio":@"الصوت", @"subtitles":@"الترجمة", @"subsync":@"مزامنة الترجمة", @"nextsub":@"الترجمة التالية", @"external":@"مشغّل خارجي", @"video":@"إعدادات المشغّل", @"ppi":@"معلومات التشغيل"}
++    : @{@"sources":@"Sources", @"episodes":@"Episodes", @"info":@"Info", @"audio":@"Audio", @"subtitles":@"Subtitles", @"subsync":@"Subtitle sync", @"nextsub":@"Next subtitle", @"external":@"External player", @"video":@"Player settings", @"ppi":@"Playback info"};
++  NSDictionary* symbols = @{@"sources":@"square.stack", @"episodes":@"list.bullet", @"info":@"info.circle", @"audio":@"speaker.wave.2", @"subtitles":@"captions.bubble", @"subsync":@"arrow.triangle.2.circlepath", @"nextsub":@"captions.bubble", @"external":@"arrow.up.right.square", @"video":@"gearshape", @"ppi":@"chart.bar"};
++  for (int id : ids) {
++    auto* button = dynamic_cast<CGUIButtonControl*>(window->GetControl(id));
++    if (!button || !button->IsVisible() || !button->CanFocus()) continue;
++    NSString* label = NS(button->GetLabel()), *symbol = @"";
++    if (player) {
++      if (id >= 6501 && id <= 6510 && home) {
++        NSString* key = NS(Property(home, ("dhs.pref.osd_slot_" + std::to_string(id - 6500)).c_str()));
++        label = labels[key] ?: label; symbol = symbols[key] ?: @"";
++      } else if (id == 6001) { label = Player()->IsPaused() ? (rtl ? @"تشغيل" : @"Play") : (rtl ? @"إيقاف مؤقت" : @"Pause"); symbol = Player()->IsPaused() ? @"play.fill" : @"pause.fill"; }
++      else if (id == 6002) { label = rtl ? @"السابق" : @"Previous"; symbol = @"backward.end.fill"; }
++      else if (id == 6003) { label = rtl ? @"التالي" : @"Next"; symbol = @"forward.end.fill"; }
++      else if (id == 6004) { label = rtl ? @"إيقاف" : @"Stop"; symbol = @"stop.fill"; }
++    }
++    if (id == 2200) label = NS(Property(window, "play_mode_prefix") + ": " + Property(window, "play_mode_label"));
++    [cards addObject:@{@"key":NS("button:" + std::to_string(id)), @"control":@(id), @"index":@(cards.count),
++      @"title":label, @"subtitle":@"", @"image":@"", @"progress":@0, @"symbol":symbol}];
++  }
++  if (cards.count) [sections addObject:@{@"control":@0, @"title":@"", @"style":style, @"selected":@0, @"items":cards}];
++}
++
++NSData* Snapshot(CGUIWindow* window, const std::string& kind) {
++  NSMutableArray* sections = [NSMutableArray array];
++  if (kind == "home") {
++    NSMutableArray* navigation = [NSMutableArray array];
++    const bool names = !Property(window, "dh.nav.names").empty();
++    const int controls[] = {89,9010,9011,9012,9013,9014,9015,9016,9050,9051,9052,9053,9054,9055,9056,9020,9021};
++    const char* labels[] = {"home", "movie", "series", "servers", "live", "library", "addons"};
++    for (int id : controls) {
++      auto* button = dynamic_cast<CGUIButtonControl*>(window->GetControl(id));
++      const bool tab = (id >= 9010 && id <= 9016) || (id >= 9050 && id <= 9056);
++      if (!button || (!tab && !button->IsVisible()) || !button->CanFocus()) continue;
++      if (tab && ((id >= 9050) != names)) continue;
++      const int tabIndex = id - (names ? 9050 : 9010);
++      if (tab && tabIndex == 3 && !Property(window, "dh.nav.noservers").empty()) continue;
++      auto label = tab ? Property(window, (std::string("dh.nav.") + labels[tabIndex]).c_str()) : button->GetLabel();
++      if (id == 89 && label.empty()) label = Property(window, "dh.profile");
++      [navigation addObject:@{@"key":NS("button:" + std::to_string(id)), @"control":@(id), @"index":@(navigation.count),
++        @"title":NS(label), @"subtitle":@"", @"image":@"", @"progress":@0}];
++    }
++    // Direct buttons keep their real control ID; the section groups them visually.
++    NSMutableArray* iconSections = [NSMutableArray array];
++    AddList(window, iconSections, 89, @"", @"buttons");
++    AddList(window, iconSections, 91, @"", @"buttons");
++    for (NSDictionary* icons in iconSections) [navigation addObjectsFromArray:icons[@"items"]];
++    if (navigation.count) [sections addObject:@{@"control":@90, @"title":@"", @"style":@"buttons", @"selected":@0, @"items":navigation}];
++    AddList(window, sections, 92, @"", @"buttons");
++    AddList(window, sections, 200, @"", @"buttons");
++    AddList(window, sections, 210, @"", @"buttons");
++    NSMutableArray* tools = [NSMutableArray array];
++    for (int id : {93, 6009, 94, 96, 97}) {
++      auto* button = dynamic_cast<CGUIButtonControl*>(window->GetControl(id));
++      if (!button || !button->IsVisible() || !button->CanFocus()) continue;
++      [tools addObject:@{@"key":NS("button:" + std::to_string(id)), @"control":@(id), @"index":@(tools.count),
++        @"title":NS(button->GetLabel()), @"subtitle":@"", @"image":@"", @"progress":@0}];
++    }
++    if (tools.count) [sections addObject:@{@"control":@90, @"title":@"", @"style":@"buttons", @"selected":@0, @"items":tools}];
++    for (int id = 5000; id <= 5005; ++id)
++      AddList(window, sections, id, NS(Property(window, "dh.rowA.title")), id == 5001 || id == 5003 ? @"landscape" : id == 5002 || id == 5005 ? @"square" : @"poster");
++  } else if (kind == "details") {
++    AddList(window, sections, 100, @"", @"buttons");
++    AddList(window, sections, 300, @"", @"buttons");
++    AddList(window, sections, 310, NS(Property(window, "dd.eps.status")), @"landscape");
++    AddList(window, sections, 400, NS(Property(window, "dd.cast.title")), @"square");
++    AddList(window, sections, 500, NS(Property(window, "dd.related.title")), @"poster");
++  } else if (kind == "catalog") {
++    AddList(window, sections, 6100, @"", @"buttons"); // Original sort/genre/filter actions.
++    AddList(window, sections, 6110, @"", @"buttons"); // Original open filter sheet.
++    for (int id = 6000; id <= 6002; ++id)
++      AddList(window, sections, id, @"", id == 6001 ? @"grid-landscape" : id == 6002 ? @"grid-square" : @"grid-poster");
++  } else if (kind == "sources") {
++    AddButtons(window, sections, {2200});
++    AddList(window, sections, 2300, @"", @"buttons");
++    AddList(window, sections, 2100, @"", @"buttons", true);
++    AddList(window, sections, 2000, NS(Property(window, "results_label") + "  " + Property(window, "total_results")), @"source");
++  } else if (kind == "source-loading") {
++    AddButtons(window, sections, {9001, 9002, 9000});
++  } else if (kind == "options") {
++    AddList(window, sections, 100, @"", @"choice");
++  } else if (kind == "player-settings") {
++    if (Property(window, "side").empty()) AddList(window, sections, 100, @"", @"choice");
++    else if (Property(window, "side") == "tracks") AddList(window, sections, 200, @"", @"choice");
++    else {
++      AddList(window, sections, 210, @"", @"choice");
++      AddList(window, sections, Property(window, "src") == "kodi" ? 300 : 220, @"", @"choice");
++    }
++  } else if (kind == "player") {
++    const auto session = PlaybackID();
++    [sections addObject:@{@"control":@8200, @"title":@"", @"style":@"timeline", @"selected":@0,
++      @"items":@[@{@"key":NS("timeline:" + session), @"control":@8200, @"index":@0,
++      @"title":@"", @"subtitle":@"", @"image":@"", @"progress":@0}]}];
++    AddButtons(window, sections, {6001, 6002, 6003, 6004}, true);
++    AddButtons(window, sections, {6501,6502,6503,6504,6505,6506,6507,6508,6509,6510}, true);
++  } else if (kind == "picker") {
++    if (window->GetID() == WINDOW_DIALOG_SELECT) {
++      AddList(window, sections, 3, @"", @"choice"); AddList(window, sections, 6, @"", @"choice");
++      AddButtons(window, sections, {5,8,7});
++    } else {
++      std::vector<int> choices; for (int id = 1000; id <= 1100; ++id) choices.push_back(id);
++      // Context choices are still real Kodi controls, in their original order.
++      AddButtons(window, sections, choices, false, @"choice");
++    }
++  }
++  if (!sections.count) return nil;
++  auto title = Property(window, "dh.title");
++  if (title.empty()) title = Property(window, "dh.page.title");
++  auto background = Property(window, "dh.backdrop");
++  if (background.empty()) background = Property(window, "dh.brand.fanart");
++  auto logo = Property(window, "dh.logo"), plot = Property(window, "dh.plot"), info = Property(window, "dh.meta");
++  auto heroKey = Property(window, "dexhub.native.hero");
++  std::string status;
++  if (kind == "sources") {
++    title = Property(window, "nv_title"); if (title.empty()) title = Property(window, "title");
++    background = Property(window, "dexhub.results.fanart"); logo = Property(window, "dexhub.results.clearlogo");
++    plot = Property(window, "plot"); info = Property(window, "nv_l1") + "  " + Property(window, "nv_l2");
++    status = Property(window, "loading_label"); if (info.empty() || info == "  ") info = status;
++  } else if (kind == "source-loading") {
++    title = Property(window, "title"); if (title.empty()) title = Property(window, "eyebrow");
++    background = Property(window, "dexhub.loading.fanart"); logo = Property(window, "dexhub.loading.clearlogo");
++    info = Property(window, "status"); status = Property(window, "progress_label");
++    info += "  " + status;
++    plot = Property(window, "hint_line") + "  " + Property(window, "current_provider");
++  } else if (kind == "options") {
++    title = Property(window, "do.title"); status = Property(window, "do.subtitle");
++  } else if (kind == "player-settings") {
++    const bool side = !Property(window, "side").empty();
++    title = Property(window, side ? "side_title" : "title"); status = Property(window, side ? "side_hint" : "hint");
++  } else if (kind == "player") {
++    title = CServiceBroker::GetGUI()->GetInfoManager().GetLabel(VIDEOPLAYER_TITLE, WINDOW_FULLSCREEN_VIDEO);
++    status = Player()->GetCurrentPlayer();
++  } else if (kind == "picker") {
++    const auto* heading = window->GetControl(1); title = heading ? heading->GetDescription() : "";
++  }
++  if (heroKey.empty()) heroKey = Property(window, "dexhub.native.instance");
++  NSString* focusKey = @"";
++  const int focused = window->GetFocusedControlID();
++  auto* focusedList = dynamic_cast<CGUIBaseContainer*>(window->GetControl(focused));
++  for (NSDictionary* section in sections)
++    for (NSDictionary* card in section[@"items"])
++      if ([card[@"control"] intValue] == focused && (!focusedList || [card[@"index"] intValue] == focusedList->GetSelectedItem()))
++        focusKey = card[@"key"];
++  NSMutableDictionary* model = [@{@"api":@2, @"window":@(window->GetID()), @"instance":NS(Property(window,"dexhub.native.instance")),
++    @"kind":NS(kind == "options" || kind == "player-settings" ? "picker" : kind), @"title":NS(title), @"logo":Art(logo), @"background":Art(background),
++    @"plot":NS(Property(window,"dh.plot.off").empty() ? plot : ""), @"info":NS(info), @"heroKey":NS(heroKey), @"status":NS(status),
++    @"caption":NS(Property(window,"dh.cards.below")),
++    @"rtl":@(Property(window,"dexhub.native.rtl") == "1"), @"motion":@(Property(window,"dh.motion") != "none"),
++    @"focused":@(focused), @"focusKey":focusKey, @"sections":sections} mutableCopy];
++  if (kind == "player" || kind == "player-settings") model[@"playback"] = @{@"session":NS(PlaybackID()), @"time":@(std::max<int64_t>(0, Player()->GetTime()) / 1000.0),
++    @"duration":@(std::max<int64_t>(0, Player()->GetTotalTime()) / 1000.0), @"paused":@(Player()->IsPaused()), @"buffering":@(Player()->IsCaching()), @"canSeek":@(Player()->CanSeek())};
++  return [NSJSONSerialization dataWithJSONObject:model options:NSJSONWritingSortedKeys error:nil];
++}
++
++void Hide() {
++  if (!visible.exchange(false) && !queued) return;
++  ++generation; lastSnapshot = nil;
++  suppressedOSD = 0;
++  suppressedWindow = 0;
++  { std::lock_guard lock(eventLock); events.clear(); }
++  dispatch_async(dispatch_get_main_queue(), ^{ [NSClassFromString(@"DexNativeSkin") suspend]; });
++}
++}
++
++bool CTVOSNativeSkin::IsVisible() { return visible.load(); }
++bool CTVOSNativeSkin::ShouldRenderVideo() { return visible && suppressedOSD == WINDOW_DIALOG_VIDEO_OSD; }
++bool CTVOSNativeSkin::SuppressWindowDraw(int id) {
++  return visible && suppressedOSD != 0 && id != WINDOW_FULLSCREEN_VIDEO
++      && (id == WINDOW_DIALOG_VIDEO_OSD || id == suppressedWindow);
++}
++
++bool CTVOSNativeSkin::FrameMove() {
++  @autoreleasepool {
++  auto* gui = CServiceBroker::GetGUI();
++  if (!gui) { Hide(); return false; }
++  auto& manager = gui->GetWindowManager();
++  // Toasts and modeless Kodi dialogs must remain visible above the browse UI.
++  const int top = manager.GetTopmostDialog();
++  if (top != WINDOW_INVALID && top != manager.GetActiveWindowOrDialog()) { Hide(); return false; }
++  auto* window = manager.GetWindow(manager.GetActiveWindowOrDialog());
++  auto kind = window ? Property(window, "dexhub.native.kind") : std::string{};
++  auto* home = manager.GetWindow(WINDOW_HOME);
++  const bool enabled = home && Property(home, "dexhub.native.enabled") == "1";
++  const bool system = window && enabled && ((window->GetID() == WINDOW_DIALOG_VIDEO_OSD && Player()->IsPlayingVideo())
++    || window->GetID() == WINDOW_DIALOG_SELECT || window->GetID() == WINDOW_DIALOG_CONTEXT_MENU);
++  if (system) {
++    const auto session = Player()->IsPlayingVideo() ? PlaybackID() : std::string{};
++    if (systemWindow != window->GetID() || systemSession != session) {
++      systemWindow = window->GetID(); systemSession = session;
++      window->SetProperty("dexhub.native.instance", CVariant(Str(NSUUID.UUID.UUIDString)));
++    }
++    kind = window->GetID() == WINDOW_DIALOG_VIDEO_OSD ? "player" : "picker";
++    window->SetProperty("dexhub.native.rtl", home->GetProperty("dexhub.native.rtl"));
++  } else systemWindow = 0;
++  const bool supported = kind == "home" || kind == "details" || kind == "catalog" || kind == "sources" || kind == "source-loading" || kind == "options" || (kind == "player-settings" && Player()->IsPlayingVideo()) || (system && (kind == "player" || kind == "picker"));
++  if (!window || !supported || Property(window, "dexhub.native.instance").empty()) {
++    Hide(); return false;
++  }
++  const auto instance = Property(window, "dexhub.native.instance");
++  if (instance != renderedInstance) { Hide(); renderedInstance = instance; }
++  Deliver(window);
++  // A click may have opened Kodi's original sources, player or another dialog.
++  if (manager.GetActiveWindowOrDialog() != window->GetID()) { Hide(); return false; }
++  const auto now = std::chrono::steady_clock::now();
++  const bool floating = Player()->IsPlayingVideo() && manager.GetActiveWindow() == WINDOW_FULLSCREEN_VIDEO;
++  if (queued || now < nextSnapshot) return visible && !floating;
++  nextSnapshot = now + std::chrono::milliseconds(150);
++  NSData* data = Snapshot(window, kind);
++  if (!data) { Hide(); return false; }
++  if ([data isEqualToData:lastSnapshot]) return visible && !floating;
++  lastSnapshot = data; queued = true;
++  const auto expected = generation.load();
++  const int presentedWindowID = window->GetID();
++  dispatch_async(dispatch_get_main_queue(), ^{
++    if (generation != expected) { queued = false; return; }
++    Class renderer = NSClassFromString(@"DexNativeSkin");
++    if (!renderer) {
++      NSString* path = [NSBundle.mainBundle.bundlePath stringByAppendingPathComponent:@"Frameworks/DexNavigationKit.framework"];
++      [[NSBundle bundleWithPath:path] load]; renderer = NSClassFromString(@"DexNativeSkin");
++    }
++    const bool ready = renderer && [renderer respondsToSelector:@selector(update:from:perform:)];
++    if (ready && !visible)
++      [g_xbmcController.inputHandler.inputTouch cancelGestures:nil];
++    visible = ready && [renderer update:data from:g_xbmcController perform:^(NSString* event) {
++      if (generation == expected) QueueEvent(event);
++    }];
++    suppressedOSD = visible && floating ? WINDOW_DIALOG_VIDEO_OSD : 0;
++    suppressedWindow = visible && floating ? presentedWindowID : 0;
++    queued = false;
++  });
++  return visible && !floating;
++  }
++}
+diff --git a/xbmc/platform/darwin/tvos/XBMCApplication.mm b/xbmc/platform/darwin/tvos/XBMCApplication.mm
+index f0d7152..e2d4f47 100644
+--- a/xbmc/platform/darwin/tvos/XBMCApplication.mm
++++ b/xbmc/platform/darwin/tvos/XBMCApplication.mm
+@@ -1,3 +1,4 @@
++#include "platform/darwin/tvos/TVOSExternalApp.h"
+ /*
+  *  Copyright (C) 2010-2018 Team Kodi
+  *  This file is part of Kodi - https://kodi.tv
+@@ -78,10 +79,7 @@ - (BOOL)application:(UIApplication*)application
+   CPreflightHandler::MigrateUserdataXMLToNSUserDefaults();
+ 
+   // UI setup
+-  self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
+-  self.window.rootViewController = [XBMCController new];
+-  [self.window makeKeyAndVisible];
+-  [self.xbmcController startAnimation];
++  // The scene delegate creates the Kodi window.
+ 
+   // audio session setup
+   auto audioSession = AVAudioSession.sharedInstance;
+@@ -104,7 +102,11 @@ - (BOOL)application:(UIApplication*)app
+             openURL:(NSURL*)url
+             options:(NSDictionary<NSString*, id>*)options
+ {
++  if (CTVOSExternalApp::HandleURL(url.absoluteString.UTF8String))
++    return YES;
+   NSArray* urlComponents = [url.absoluteString componentsSeparatedByString:@"/"];
++  if (urlComponents.count < 3)
++    return NO;
+   NSString* action = urlComponents[2];
+   if ([action isEqualToString:@"display"] || [action isEqualToString:@"play"])
+     CTVOSTopShelf::GetInstance().HandleTopShelfUrl(url.absoluteString.UTF8String, true);
+@@ -112,6 +114,71 @@ - (BOOL)application:(UIApplication*)app
+ }
+ @end
+ 
++
++// DexHub Scene Lifecycle for Kodi built with modern tvOS SDKs.
++@interface DexHubSceneDelegate : UIResponder <UIWindowSceneDelegate>
++@property(nullable, nonatomic, strong) UIWindow* window;
++@property(nonatomic) BOOL wasBackgrounded;
++@end
++
++@implementation DexHubSceneDelegate
++
++- (void)scene:(UIScene*)scene
++    willConnectToSession:(UISceneSession*)session
++                 options:(UISceneConnectionOptions*)connectionOptions
++{
++  if (![scene isKindOfClass:[UIWindowScene class]])
++    return;
++  XBMCApplicationDelegate* app =
++      (XBMCApplicationDelegate*)UIApplication.sharedApplication.delegate;
++  if (app.window)
++  {
++    self.window = app.window;
++    self.window.windowScene = (UIWindowScene*)scene;
++    [self.window makeKeyAndVisible];
++    XBMCController* controller = (XBMCController*)self.window.rootViewController;
++    [controller resumeAnimation];
++    [controller enterForeground];
++  }
++  else
++  {
++    self.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene*)scene];
++    self.window.rootViewController = [XBMCController new];
++    app.window = self.window;
++    [self.window makeKeyAndVisible];
++    [(XBMCController*)self.window.rootViewController startAnimation];
++  }
++  for (UIOpenURLContext* context in connectionOptions.URLContexts)
++    [app application:UIApplication.sharedApplication openURL:context.URL options:@{}];
++}
++
++- (void)sceneDidEnterBackground:(UIScene*)scene
++{
++  self.wasBackgrounded = YES;
++  XBMCController* controller = (XBMCController*)self.window.rootViewController;
++  [controller pauseAnimation];
++  [controller enterBackground];
++}
++
++- (void)sceneWillEnterForeground:(UIScene*)scene
++{
++  if (!self.wasBackgrounded)
++    return;
++  self.wasBackgrounded = NO;
++  XBMCController* controller = (XBMCController*)self.window.rootViewController;
++  [controller resumeAnimation];
++  [controller enterForeground];
++}
++
++- (void)scene:(UIScene*)scene openURLContexts:(NSSet<UIOpenURLContext*>*)URLContexts
++{
++  XBMCApplicationDelegate* app =
++      (XBMCApplicationDelegate*)UIApplication.sharedApplication.delegate;
++  for (UIOpenURLContext* context in URLContexts)
++    [app application:UIApplication.sharedApplication openURL:context.URL options:@{}];
++}
++@end
++
+ static void SigPipeHandler(int s)
+ {
+   NSLog(@"We Got a Pipe Signal: %d____________", s);
+diff --git a/xbmc/platform/darwin/tvos/XBMCController.mm b/xbmc/platform/darwin/tvos/XBMCController.mm
+index 1c09a47..08671b2 100644
+--- a/xbmc/platform/darwin/tvos/XBMCController.mm
++++ b/xbmc/platform/darwin/tvos/XBMCController.mm
+@@ -91,7 +91,6 @@ - (void)viewDidLoad
+   self.view.backgroundColor = UIColor.blackColor;
+   [self.view addSubview:glView];
+ 
+-  [inputHandler.inputTouch createSwipeGestureRecognizers];
+   [inputHandler.inputTouch createPanGestureRecognizers];
+   [inputHandler.inputTouch createPressGesturecognizers];
+   [inputHandler.inputTouch createTapGesturecognizers];
+@@ -115,6 +114,7 @@ - (void)viewDidAppear:(BOOL)animated
+ 
+ - (void)viewWillDisappear:(BOOL)animated
+ {
++  [inputHandler.inputTouch cancelGestures:nil];
+   [self pauseAnimation];
+   [super viewWillDisappear:animated];
+ }
+diff --git a/xbmc/platform/darwin/tvos/input/DexRemoteNavigation.h b/xbmc/platform/darwin/tvos/input/DexRemoteNavigation.h
+new file mode 100644
+index 0000000..eff4d3b
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/input/DexRemoteNavigation.h
+@@ -0,0 +1,31 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#import <Foundation/Foundation.h>
++
++@protocol DexRemoteNavigationAPI <NSObject>
++- (void)beginIgnoring:(BOOL)ignore context:(NSInteger)context;
++- (NSInteger)moveX:(double)x y:(double)y time:(double)time horizontal:(NSInteger)horizontal
++          vertical:(NSInteger)vertical context:(NSInteger)context;
++- (NSInteger)endX:(double)x y:(double)y time:(double)time horizontal:(NSInteger)horizontal
++         vertical:(NSInteger)vertical context:(NSInteger)context;
++- (void)resetGesture;
++- (BOOL)acceptsContext:(NSInteger)context;
++@end
++
++static inline id<DexRemoteNavigationAPI> DexCreateRemoteNavigation()
++{
++  Class navigation = NSClassFromString(@"DexRemoteNavigation");
++  if (!navigation)
++  {
++    NSString* path = [NSBundle.mainBundle.privateFrameworksPath
++        stringByAppendingPathComponent:@"DexNavigationKit.framework"];
++    [[NSBundle bundleWithPath:path] load];
++    navigation = NSClassFromString(@"DexRemoteNavigation");
++  }
++  if (![navigation instancesRespondToSelector:@selector(beginIgnoring:context:)] ||
++      ![navigation instancesRespondToSelector:@selector(moveX:y:time:horizontal:vertical:context:)] ||
++      ![navigation instancesRespondToSelector:@selector(endX:y:time:horizontal:vertical:context:)] ||
++      ![navigation instancesRespondToSelector:@selector(resetGesture)] ||
++      ![navigation instancesRespondToSelector:@selector(acceptsContext:)])
++    return nil;
++  return (id<DexRemoteNavigationAPI>)[navigation new];
++}
+diff --git a/xbmc/platform/darwin/tvos/input/DexRemotePan.h b/xbmc/platform/darwin/tvos/input/DexRemotePan.h
+new file mode 100644
+index 0000000..1448954
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/input/DexRemotePan.h
+@@ -0,0 +1,69 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++
++#include <algorithm>
++#include <cmath>
++
++class DexRemotePan
++{
++public:
++  void Begin(bool ignore)
++  {
++    Reset();
++    m_active = true;
++    m_ignore = ignore;
++  }
++
++  int Move(double x, double y, double now, int horizontalSensitivity, int verticalSensitivity)
++  {
++    if (!m_active || m_ignore)
++      return 0;
++    const double horizontal = Threshold(horizontalSensitivity);
++    const double vertical = Threshold(verticalSensitivity);
++    if (m_axis == Axis::None)
++    {
++      if (std::abs(x) >= horizontal && std::abs(x) >= std::abs(y))
++        m_axis = Axis::Horizontal;
++      else if (std::abs(y) >= vertical && std::abs(y) > std::abs(x))
++        m_axis = Axis::Vertical;
++      else
++        return 0;
++    }
++    const bool across = m_axis == Axis::Horizontal;
++    const double delta = across ? x - m_x : y - m_y;
++    if (std::abs(delta) < (across ? horizontal : vertical))
++      return 0;
++    // Discard distance during the repeat interval; never replay a fast fling.
++    m_x = x;
++    m_y = y;
++    if (m_sent && now - m_last < (across ? 0.14 : 0.20))
++      return 0;
++    m_sent = true;
++    m_last = now;
++    return across ? (delta < 0 ? 25 : 26) : (delta < 0 ? 23 : 24);
++  }
++
++  int End(double x, double y, double now, int horizontalSensitivity, int verticalSensitivity)
++  {
++    const int key = m_sent ? 0 : Move(x, y, now, horizontalSensitivity, verticalSensitivity);
++    Reset();
++    return key;
++  }
++
++  void Reset()
++  {
++    m_axis = Axis::None;
++    m_active = m_ignore = m_sent = false;
++    m_x = m_y = m_last = 0;
++  }
++
++private:
++  static double Threshold(int sensitivity)
++  {
++    return std::clamp((1500.0 - std::clamp(sensitivity, 50, 1450)) * 0.12, 36.0, 174.0);
++  }
++  enum class Axis { None, Horizontal, Vertical };
++  Axis m_axis{Axis::None};
++  bool m_active{false}, m_ignore{false}, m_sent{false};
++  double m_x{0}, m_y{0}, m_last{0};
++};
+diff --git a/xbmc/platform/darwin/tvos/input/LibInputRemote.mm b/xbmc/platform/darwin/tvos/input/LibInputRemote.mm
+index db94a23..dcdb01f 100644
+--- a/xbmc/platform/darwin/tvos/input/LibInputRemote.mm
++++ b/xbmc/platform/darwin/tvos/input/LibInputRemote.mm
+@@ -28,7 +28,7 @@ @implementation TVOSLibInputRemote
+ @synthesize siriRemoteIdleState = m_siriRemoteIdleState;
+ 
+ // Default Timer values (seconds)
+-NSTimeInterval REPEATED_KEYPRESS_DELAY_S = 0.50;
++NSTimeInterval REPEATED_KEYPRESS_DELAY_S = 0.35;
+ NSTimeInterval REPEATED_KEYPRESS_PAUSE_S = 0.05;
+ 
+ #pragma mark - Siri remote idle timer
+@@ -71,7 +71,7 @@ - (void)setSiriRemoteIdleState
+ 
+ - (void)startKeyPressTimer:(int)keyId
+ {
+-  [self startKeyPressTimer:keyId clickTime:REPEATED_KEYPRESS_PAUSE_S];
++  [self startKeyPressTimer:keyId clickTime:(keyId == 1 || keyId == 2) ? 0.18 : 0.12];
+ }
+ 
+ - (void)startKeyPressTimer:(int)keyId clickTime:(NSTimeInterval)interval
+diff --git a/xbmc/platform/darwin/tvos/input/LibInputTouch.h b/xbmc/platform/darwin/tvos/input/LibInputTouch.h
+index 6f4cb16..23aa492 100644
+--- a/xbmc/platform/darwin/tvos/input/LibInputTouch.h
++++ b/xbmc/platform/darwin/tvos/input/LibInputTouch.h
+@@ -7,6 +7,8 @@
+  */
+ 
+ #import <UIKit/UIKit.h>
++#include "DexRemotePan.h"
++#import "DexRemoteNavigation.h"
+ 
+ typedef NS_ENUM(NSUInteger, UIPanGestureRecognizerDirection) {
+   UIPanGestureRecognizerDirectionUndefined,
+@@ -21,6 +23,9 @@ typedef NS_ENUM(NSUInteger, UIPanGestureRecognizerDirection) {
+   UIPanGestureRecognizerDirection m_direction;
+   BOOL m_directionOverride;
+   CGPoint m_lastGesturePoint;
++  DexRemotePan m_dexRemotePan;
++  id<DexRemoteNavigationAPI> m_dexNavigation;
++  NSInteger m_dexNavigationContext;
+   unsigned long m_touchDirection;
+   BOOL m_touchBeginSignaled;
+ }
+@@ -31,6 +36,7 @@ typedef NS_ENUM(NSUInteger, UIPanGestureRecognizerDirection) {
+        shouldReceivePress:(UIPress*)press;
+ - (void)createSwipeGestureRecognizers;
+ - (void)createPanGestureRecognizers;
++- (void)cancelGestures:(NSNotification*)notification;
+ - (void)createTapGesturecognizers;
+ - (void)createPressGesturecognizers;
+ - (void)menuPressed:(UITapGestureRecognizer*)sender;
+diff --git a/xbmc/platform/darwin/tvos/input/LibInputTouch.mm b/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
+index 1a86773..3ced3c1 100644
+--- a/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
++++ b/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
+@@ -12,6 +12,7 @@
+ #include "application/ApplicationComponents.h"
+ #include "application/ApplicationPlayer.h"
+ #include "guilib/GUIComponent.h"
++#include "guilib/GUIWindow.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "utils/log.h"
+ 
+@@ -65,14 +66,16 @@ - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldReceiveP
+     // single press key, but also detect hold and back to tvos.
+     case UIPressTypeMenu:
+     {
++      // Back on the Home window returns to the Apple TV Home screen, as in other
++      // tvOS apps, unless a dialog is open, something plays, or the skin or add-on
++      // asks to keep it (Window(Home).Property(dexhub.keepback)).
+       const auto& components = CServiceBroker::GetAppComponents();
+       const auto appPlayer = components.GetComponent<CApplicationPlayer>();
+-      // menu is special.
+-      //  a) if at our home view, should return to atv home screen.
+-      //  b) if not, let it pass to us.
+-      if (CServiceBroker::GetGUI()->GetWindowManager().GetActiveWindow() == WINDOW_HOME &&
+-          !CServiceBroker::GetGUI()->GetWindowManager().HasVisibleModalDialog() &&
+-          !appPlayer->IsPlaying())
++      auto& windowManager = CServiceBroker::GetGUI()->GetWindowManager();
++      const CGUIWindow* home = windowManager.GetWindow(WINDOW_HOME);
++      if (windowManager.GetActiveWindow() == WINDOW_HOME &&
++          !windowManager.HasVisibleModalDialog() && !appPlayer->IsPlaying() &&
++          !(home && home->GetProperty("dexhub.keepback").asBoolean()))
+         handled = NO;
+       break;
+     }
+@@ -118,6 +121,11 @@ - (void)createPanGestureRecognizers
+   // for pan gestures with one finger
+   auto pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
+   pan.delegate = self;
++  m_dexNavigation = DexCreateRemoteNavigation();
++  if (!m_dexNavigation)
++    CLog::Log(LOGWARNING, "DexHub Swift navigation unavailable; using built-in gesture handling");
++  [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(cancelGestures:)
++                                               name:UIApplicationWillResignActiveNotification object:nil];
+   [g_xbmcController.glView addGestureRecognizer:pan];
+ }
+ 
+@@ -372,6 +380,8 @@ - (IBAction)IRRemoteUpArrowPressed:(UIGestureRecognizer*)sender
+       break;
+     case UIGestureRecognizerStateChanged:
+       break;
++    case UIGestureRecognizerStateCancelled:
++    case UIGestureRecognizerStateFailed:
+     case UIGestureRecognizerStateEnded:
+       [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
+       [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
+@@ -391,6 +401,8 @@ - (IBAction)IRRemoteDownArrowPressed:(UIGestureRecognizer*)sender
+       break;
+     case UIGestureRecognizerStateChanged:
+       break;
++    case UIGestureRecognizerStateCancelled:
++    case UIGestureRecognizerStateFailed:
+     case UIGestureRecognizerStateEnded:
+       [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
+       [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
+@@ -410,6 +422,8 @@ - (IBAction)IRRemoteLeftArrowPressed:(UIGestureRecognizer*)sender
+       break;
+     case UIGestureRecognizerStateChanged:
+       break;
++    case UIGestureRecognizerStateCancelled:
++    case UIGestureRecognizerStateFailed:
+     case UIGestureRecognizerStateEnded:
+       [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
+       [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
+@@ -429,6 +443,8 @@ - (IBAction)IRRemoteRightArrowPressed:(UIGestureRecognizer*)sender
+       break;
+     case UIGestureRecognizerStateChanged:
+       break;
++    case UIGestureRecognizerStateCancelled:
++    case UIGestureRecognizerStateFailed:
+     case UIGestureRecognizerStateEnded:
+       [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
+       [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
+@@ -480,85 +496,79 @@ - (IBAction)tapRightArrowPressed:(UIGestureRecognizer*)sender
+ 
+ - (IBAction)handlePan:(UIPanGestureRecognizer*)sender
+ {
+-  if (g_xbmcController.inputHandler.inputRemote.siriRemoteIdleState)
++  auto remote = g_xbmcController.inputHandler.inputRemote;
++  auto settings = g_xbmcController.inputHandler.inputSettings;
++  const CGPoint point = [sender translationInView:sender.view];
++  const double now = NSProcessInfo.processInfo.systemUptime;
++  if (sender.state == UIGestureRecognizerStateBegan)
+   {
+-    [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
+-    return;
++    auto* gui = CServiceBroker::GetGUI();
++    m_dexNavigationContext = gui ? gui->GetWindowManager().GetActiveWindowOrDialog() : -1;
+   }
+-
+-  auto translation = [sender translationInView:sender.view];
+-  auto velocity = [sender velocityInView:sender.view];
+-  auto direction = [self getPanDirection:velocity];
+-  const auto maxSensitivity = 1500;
+-
++  const NSInteger context = m_dexNavigationContext;
++  int key = 0;
+   switch (sender.state)
+   {
+     case UIGestureRecognizerStateBegan:
+-    {
+-      m_lastGesturePoint = translation;
++      m_dexRemotePan.Begin(remote.siriRemoteIdleState);
++      [m_dexNavigation beginIgnoring:remote.siriRemoteIdleState context:context];
++      [remote stopKeyPressTimer];
++      [remote startSiriRemoteIdleTimer];
++      key = m_dexNavigation ? (int)[m_dexNavigation moveX:point.x y:point.y time:now
++                     horizontal:settings.siriRemoteHorizontalSensitivity
++                       vertical:settings.siriRemoteVerticalSensitivity context:context]
++          : m_dexRemotePan.Move(point.x, point.y, now,
++                               settings.siriRemoteHorizontalSensitivity,
++                               settings.siriRemoteVerticalSensitivity);
+       break;
+-    }
+     case UIGestureRecognizerStateChanged:
+-    {
+-      int keyId = 0;
+-      switch (direction)
+-      {
+-        case UIPanGestureRecognizerDirectionUp:
+-        {
+-          if (fabs(m_lastGesturePoint.y - translation.y) >
+-              maxSensitivity - g_xbmcController.inputHandler.inputSettings.siriRemoteVerticalSensitivity)
+-          {
+-            CLog::Log(LOGDEBUG, "Input: Siri remote pan up (id: 23)");
+-            keyId = 23;
+-          }
+-          break;
+-        }
+-        case UIPanGestureRecognizerDirectionDown:
+-        {
+-          if (fabs(m_lastGesturePoint.y - translation.y) >
+-              maxSensitivity - g_xbmcController.inputHandler.inputSettings.siriRemoteVerticalSensitivity)
+-          {
+-            CLog::Log(LOGDEBUG, "Input: Siri remote pan down (id: 24)");
+-            keyId = 24;
+-          }
+-          break;
+-        }
+-        case UIPanGestureRecognizerDirectionLeft:
+-        {
+-          if (fabs(m_lastGesturePoint.x - translation.x) >
+-              maxSensitivity - g_xbmcController.inputHandler.inputSettings.siriRemoteHorizontalSensitivity)
+-          {
+-            CLog::Log(LOGDEBUG, "Input: Siri remote pan left (id: 25)");
+-            keyId = 25;
+-          }
+-          break;
+-        }
+-        case UIPanGestureRecognizerDirectionRight:
+-        {
+-          if (fabs(m_lastGesturePoint.x - translation.x) >
+-              maxSensitivity - g_xbmcController.inputHandler.inputSettings.siriRemoteHorizontalSensitivity)
+-          {
+-            CLog::Log(LOGDEBUG, "Input: Siri remote pan right (id: 26)");
+-            keyId = 26;
+-          }
+-          break;
+-        }
+-        default:
+-        {
+-          break;
+-        }
+-      }
+-      if (keyId != 0)
+-      {
+-        m_lastGesturePoint = translation;
+-        [g_xbmcController.inputHandler sendButtonPressed:keyId];
+-      }
++      key = m_dexNavigation ? (int)[m_dexNavigation moveX:point.x y:point.y time:now
++                     horizontal:settings.siriRemoteHorizontalSensitivity
++                       vertical:settings.siriRemoteVerticalSensitivity context:context]
++          : m_dexRemotePan.Move(point.x, point.y, now,
++                               settings.siriRemoteHorizontalSensitivity,
++                               settings.siriRemoteVerticalSensitivity);
++      break;
++    case UIGestureRecognizerStateEnded:
++      key = m_dexNavigation ? (int)[m_dexNavigation endX:point.x y:point.y time:now
++                    horizontal:settings.siriRemoteHorizontalSensitivity
++                      vertical:settings.siriRemoteVerticalSensitivity context:context]
++          : m_dexRemotePan.End(point.x, point.y, now,
++                              settings.siriRemoteHorizontalSensitivity,
++                              settings.siriRemoteVerticalSensitivity);
++      [remote startSiriRemoteIdleTimer];
++      break;
++    case UIGestureRecognizerStateCancelled:
++    case UIGestureRecognizerStateFailed:
++      [self cancelGestures:nil];
+       break;
+-    }
+     default:
+       break;
+   }
+-  [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
++  if (key)
++  {
++    // Check page ownership only for emitted steps, not every touch sample.
++    auto* gui = CServiceBroker::GetGUI();
++    const NSInteger next = gui ? gui->GetWindowManager().GetActiveWindowOrDialog() : -1;
++    // End() resets the Swift state, so its final flick uses the captured page.
++    const bool ended = sender.state == UIGestureRecognizerStateEnded;
++    const bool accepted = m_dexNavigation && !ended ? [m_dexNavigation acceptsContext:next]
++                                                    : next == context;
++    if (!accepted)
++    {
++      [self cancelGestures:nil];
++      return;
++    }
++    [g_xbmcController.inputHandler sendButtonPressed:key];
++    [remote startSiriRemoteIdleTimer];
++  }
++}
++
++- (void)cancelGestures:(NSNotification*)notification
++{
++  m_dexRemotePan.Reset();
++  [m_dexNavigation resetGesture];
++  [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
+ }
+ 
+ - (IBAction)handleSwipe:(UISwipeGestureRecognizer*)sender
+diff --git a/xbmc/video/windows/GUIWindowFullScreen.cpp b/xbmc/video/windows/GUIWindowFullScreen.cpp
+index 5f5a555..6f154ca 100644
+--- a/xbmc/video/windows/GUIWindowFullScreen.cpp
++++ b/xbmc/video/windows/GUIWindowFullScreen.cpp
+@@ -7,6 +7,9 @@
+  */
+ 
+ #include "GUIWindowFullScreen.h"
++#if defined(TARGET_DARWIN_TVOS)
++unsigned int DexAetherRedrawRevision();
++#endif
+ 
+ #include "FileItem.h"
+ #include "GUIInfoManager.h"
+@@ -182,7 +185,8 @@ void CGUIWindowFullScreen::ClearBackground()
+ {
+   const auto& components = CServiceBroker::GetAppComponents();
+   const auto appPlayer = components.GetComponent<CApplicationPlayer>();
+-  if (appPlayer->IsRenderingVideoLayer())
++  // DexHub native surface uses transparent clearing.
++  if (appPlayer->IsRenderingVideoLayer() || appPlayer->GetCurrentPlayer() == "Aether")
+     CServiceBroker::GetWinSystem()->GetGfxContext().Clear(0);
+   else if (!CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_guiGeometryClear ||
+            !appPlayer->IsRenderingVideo())
+@@ -382,8 +386,22 @@ void CGUIWindowFullScreen::Process(unsigned int currentTime, CDirtyRegionList &d
+   // Single-plane: MarkDirtyRegion every frame so the render pass keeps
+   // running and draws the next video frame. D2P video plane updates
+   // independently.
++  // DexHub native subtitle updates.
+   if (!appPlayer->IsRenderingVideoLayer())
+     MarkDirtyRegion();
++#if defined(TARGET_DARWIN_TVOS)
++  // DexHub redraw on change v21.
++  else if (appPlayer->GetCurrentPlayer() == "Aether")
++  {
++    static unsigned int dexSeen = 0;
++    const unsigned int dexNow = DexAetherRedrawRevision();
++    if (dexNow != dexSeen)
++    {
++      dexSeen = dexNow;
++      MarkDirtyRegion();
++    }
++  }
++#endif
+ 
+   m_controlStats->Reset();
+ 

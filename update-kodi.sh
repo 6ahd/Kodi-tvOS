@@ -15,7 +15,7 @@ fi
 CURRENT="$(git -C "$KODI_SRC" rev-parse HEAD)"
 EXPECTED="$(git -C "$KODI_SRC" rev-parse "refs/tags/$TAG^{commit}")"
 [ "$CURRENT" = "$EXPECTED" ] || { echo "Checkout differs from requested tag; no files changed."; exit 1; }
-python3 "$BASE/apply_bridge.py" "$KODI_SRC" --check
+python3 "$BASE/apply_kodi_patch.py" "$KODI_SRC" --check
 if [ -x /opt/homebrew/opt/m4/bin/m4 ]; then export M4=/opt/homebrew/opt/m4/bin/m4; fi
 NATIVE="${DEX_NATIVE:-$(find /Users/Shared/xbmc-depends -maxdepth 1 -type d -name '*-native' | sort | tail -1)}"
 export PATH="$NATIVE/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"

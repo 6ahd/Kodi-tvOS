@@ -26,8 +26,10 @@ MINIMUM="$(cat "$WORK/aether-bridge-build/deployment.txt")"
 echo "Experimental IPA will require tvOS $MINIMUM or newer."
 KODI_SRC="${KODI_SRC:-$WORK/kodi-rc1-source}"
 KODI_BUILD="${KODI_BUILD:-$WORK/kodi-tvos17-build}"
-"$PYTHON" "$BASE/apply_bridge.py" "$KODI_SRC" --check
-"$PYTHON" "$BASE/apply_bridge.py" "$KODI_SRC"
+"$PYTHON" "$BASE/apply_kodi_patch.py" "$KODI_SRC"
+# DexHub app icon, top shelf, launch image and splash (drawn, not stored as PNGs)
+xcrun swift "$BASE/branding/render_branding.swift" "$WORK/branding"
+"$PYTHON" "$BASE/branding/install_branding.py" "$KODI_SRC" "$WORK/branding"
 git -C "$KODI_SRC" diff --check
 if [ -x /opt/homebrew/opt/m4/bin/m4 ]; then export M4=/opt/homebrew/opt/m4/bin/m4; fi
 "$PYTHON" "$BASE/prepare_toolchain.py" "$KODI_SRC" "$KODI_BUILD" "$MINIMUM"
@@ -45,6 +47,9 @@ APP="$STAGE/Payload/Kodi.app"
 mkdir -p "$STAGE/Payload"
 ditto "$KODI_BUILD/build/$CONFIG-appletvos/Kodi.app" "$APP"
 ditto "$FRAMEWORK" "$APP/Frameworks/DexAetherBridge.framework"
+# Swift remote navigation, loaded at run time by LibInputTouch.mm (built-in
+# gesture handling is used when it is missing). Prebuilt; see vendor/README.md.
+ditto "$BASE/vendor/DexNavigationKit.framework" "$APP/Frameworks/DexNavigationKit.framework"
 # v21.36: Aether's resource bundle. AetherEngine 7.38 loads silent-atmos.mp4
 # from Bundle.module (AetherEngine_AetherEngine.bundle) when Atmos or DTS:X
 # plays as APAC; Xcode leaves the bundle beside the framework, not inside the
@@ -91,7 +96,8 @@ xcrun swift-stdlib-tool --copy --platform appletvos \
   --scan-folder "$APP/Frameworks" --destination "$APP/Frameworks"
 bash "$BASE/normalize_frameworks.sh" "$APP"
 
-OUT="${DEX_OUTPUT_DIR:-$HOME/Downloads}/Kodi-DexHub-AetherOnly-v21.42-TEST-unsigned-$(date +%Y%m%d-%H%M%S).ipa"
+APP_VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["app_version"])' "$BASE/ENGINE-RELEASE.json")"
+OUT="${DEX_OUTPUT_DIR:-$HOME/Downloads}/Kodi-DexHub-v$APP_VERSION-unsigned-$(date +%Y%m%d-%H%M%S).ipa"
 ditto -c -k --keepParent "$STAGE/Payload" "$OUT"
 unzip -t "$OUT" >/dev/null
 for ASSET in "$BASE"/assets/*.zip; do

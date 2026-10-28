@@ -1,6 +1,6 @@
 # Notices and credits
 
-This repository: build scripts, Kodi source changes (`native/`, `apply_bridge.py`, `native_player_adapter.py`) and the Aether bridge (`DexAetherEmbedded.swift`).
+This repository: build scripts, Kodi source changes (`native/kodi-22.0rc1-dexhub.patch`, `apply_kodi_patch.py`), DexHub artwork (`branding/`) and the Aether bridge (`DexAetherEmbedded.swift`).
 © 2026 DexWorld. Licensed under GPL-2.0-or-later (see `LICENSE`).
 
 The app this repository builds combines the parts below. Each keeps its own licence.

@@ -1,9 +1,7 @@
 """v21: the Kodi layer above Aether redraws only on change."""
-from pathlib import Path
-base = Path(__file__).resolve().parents[1]
-native = (base / 'native/TVOSAetherPlayer.mm').read_text()
-header = (base / 'native/TVOSAetherPlayer.h').read_text()
-adapter = (base / 'native_player_adapter.py').read_text()
+from kodi_patch import new_file, text as adapter
+native = new_file('xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm')
+header = new_file('xbmc/platform/darwin/tvos/TVOSAetherPlayer.h')
 assert 'unsigned int DexAetherRedrawRevision();' in header
 assert 'unsigned int DexAetherRedrawRevision() {' in native
 assert native.count('RequestRedraw();') >= 5
@@ -11,7 +9,7 @@ assert 'ActiveText(state)' in native and native.count('for (NSDictionary* cue in
 assert 'wait = 250;' in native
 assert '// DexHub redraw on change v21.' in adapter
 assert '// DexHub idle frame pacing v21.' in adapter
-assert '|| appPlayer->GetCurrentPlayer() == \\"Aether\\")\\n    MarkDirtyRegion' not in adapter.split('# v21: redraw')[1]
+assert '|| appPlayer->GetCurrentPlayer() == "Aether")\n    MarkDirtyRegion' not in adapter
 print('v21 idle checks passed')
 # v21.1: VideoPlayer order. Started is sent once, from OpenFile after the
 # thread starts; AV started follows the first frame.

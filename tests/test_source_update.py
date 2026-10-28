@@ -1,19 +1,18 @@
-import hashlib
-import json
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+# Usage: test_source_update.py CLEAN_KODI_22.0rc1-Piers_CHECKOUT (left clean afterwards)
 base=Path(__file__).resolve().parents[1]
 source=Path(sys.argv[1]).resolve()
 before_diff=subprocess.run(['git','-C',str(source),'diff'],capture_output=True,check=True).stdout
 def run(*args):
-    return subprocess.run([sys.executable,str(base/'apply_bridge.py'),str(source),*args],check=True,capture_output=True,text=True).stdout
+    return subprocess.run([sys.executable,str(base/'apply_kodi_patch.py'),str(source),*args],check=True,capture_output=True,text=True).stdout
+assert 'applies' in run('--check')
 run()
-assert 'Source files to change: 0' in run('--check')
-run()
-assert 'Source files to change: 0' in run('--check')
+assert 'already applied' in run('--check')
+assert 'already applied' in run()
 subprocess.run(['git','-C',str(source),'diff','--check'],check=True)
 text=(source/'xbmc/ServiceManager.cpp').read_text()
 stage=text.split('bool CServiceManager::InitStageTwo',1)[1].split('bool CServiceManager::InitStageThree',1)[0]
@@ -35,7 +34,7 @@ for filename in ['xbmc/cores/playercorefactory/PlayerCoreFactory.cpp','xbmc/core
     content=(source/filename).read_text()
     assert 'KSPlayer' not in content and 'MPV' not in content
     assert 'Aether' in content
-native=(base/'native/TVOSAetherPlayer.mm').read_text()
+native=(source/'xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm').read_text()
 assert native.count('Class bridge = Bridge(')==3
 assert '[Bridge(engineName, false) command:request]' in native
 assert 'DexKSBridge' not in native and 'DexMPVBridge' not in native
@@ -45,11 +44,11 @@ assert [x.text for x in engine.findall('./constraints/options/option')] == ['0',
 assert ET.parse(source/'system/settings/darwin_tvos.xml').find('.//setting[@id="videoplayer.dexhubtruehdatmos"]') is not None
 setter=native.split('void CTVOSAetherPlayer::SetSubtitleVerticalPosition',1)[1].split('void CTVOSAetherPlayer::GetAudioCapabilities',1)[0]
 assert 'm_lock' not in setter
-for backup in sorted((source/'.dexhub-backups').iterdir(),reverse=True):
-    manifest=json.loads((backup/'manifest.json').read_text())
-    if all((source/entry['path']).is_file() and hashlib.sha256((source/entry['path']).read_bytes()).hexdigest()==entry['after'] for entry in manifest['files']):
-        run('--restore',str(backup))
-assert not (source/'xbmc/platform/darwin/tvos/TVOSDexHubSetup.mm').exists()
+# v21.62: Back on the Home window leaves for the Apple TV Home screen; Now Playing identity.
+touch=(source/'xbmc/platform/darwin/tvos/input/LibInputTouch.mm').read_text()
+menu=touch.split('case UIPressTypeMenu:',1)[1].split('break;',1)[0]
+assert 'WINDOW_HOME' in menu and 'handled = NO;' in menu and '"dexhub.keepback"' in menu
+assert 'request[@"nowPlaying"] = nowPlaying;' in native and 'm_callback.OnPlayBackPaused();' in native
+subprocess.run(['git','-C',str(source),'apply','--reverse',str(base/'native/kodi-22.0rc1-dexhub.patch')],check=True)
 assert subprocess.run(['git','-C',str(source),'diff'],capture_output=True,check=True).stdout==before_diff
-assert 'Source files to change: 24' in run('--check')
-print('PASS: RC1 apply/idempotency/restore; setup before addon scan/services; routing; subtitle deadlock fix retained')
+print('PASS: RC1 patch apply/idempotency/reverse; setup before addon scan/services; routing; Back; Now Playing')

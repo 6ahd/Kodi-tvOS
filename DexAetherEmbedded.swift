@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import UIKit
 import AVFoundation
+import MediaPlayer
 import AetherEngine
 
 private final class SnapshotStore: @unchecked Sendable {
@@ -191,11 +192,16 @@ private final class EmbeddedSession {
     private var retainedCues: [SubtitleCue] = []
     private var cueIndex = SubtitleWindowIndex()
     private var cueUpdates: AnyCancellable?
+    private var commandTargets: [(MPRemoteCommand, Any)] = []
+    private var artworkTask: Task<Void, Never>?
 
     init(request: NSDictionary, parent: UIView, overlay: UIView) throws {
         self.request = request
         token = request["token"] as? String ?? ""
         engine = try AetherEngine()
+        // The system Now Playing card (Control Center, iPhone remote, Siri) follows
+        // this session; it must be claimed before load() creates the native host.
+        engine.ownsVideoNowPlayingSession = true
         surface = AetherPlayerView(frame: parent.bounds)
         self.overlay = overlay
         wasOpaque = overlay.isOpaque
@@ -258,10 +264,12 @@ private final class EmbeddedSession {
                     preferredSubtitleLanguages: ["ar", "ara"], externalSubtitles: [],
                     autoplay: true)
                 let position = max(0, (request["position"] as? NSNumber)?.doubleValue ?? 0)
+                stageNowPlaying()
                 let startedAt = Date()
                 try await engine.load(url: url, startPosition: position, options: options)
                 guard !stopped, !Task.isCancelled else { return }
                 NSLog("DexAetherBridge: video load completed in %.3f seconds", Date().timeIntervalSince(startedAt))
+                registerRemoteCommands()
                 engine.setNativeSubtitleRendering(false)
                 if position == 0, let percent = request["percent"] as? NSNumber, percent.doubleValue > 0,
                    engine.duration.isFinite, engine.duration > 0 {
@@ -280,6 +288,62 @@ private final class EmbeddedSession {
                 if !stopped { failure = error.localizedDescription; publish() }
             }
         }
+    }
+
+    /// Title, show or year, and poster for the system Now Playing card.
+    private func stageNowPlaying() {
+        let row = request["nowPlaying"] as? NSDictionary ?? [:]
+        var info: [String: Any] = [MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.video.rawValue]
+        if let title = row["title"] as? String, !title.isEmpty { info[MPMediaItemPropertyTitle] = title }
+        if let subtitle = row["subtitle"] as? String, !subtitle.isEmpty { info[MPMediaItemPropertyArtist] = subtitle }
+        if let path = row["artworkPath"] as? String, let image = UIImage(contentsOfFile: path) {
+            info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+        }
+        engine.setVideoNowPlayingInfo(info)
+        guard info[MPMediaItemPropertyArtwork] == nil, let raw = row["artworkURL"] as? String,
+              let url = URL(string: raw) else { return }
+        artworkTask = Task { [weak self] in
+            guard let (data, _) = try? await URLSession.shared.data(from: url),
+                  let image = UIImage(data: data), let self, !self.stopped, !Task.isCancelled else { return }
+            var updated = info
+            updated[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+            self.engine.setVideoNowPlayingInfo(updated)
+        }
+    }
+
+    /// Play, pause and skip from Control Center and the iPhone remote. Kodi learns
+    /// the new pause state from the next snapshot.
+    private func registerRemoteCommands() {
+        guard commandTargets.isEmpty, let center = engine.videoNowPlayingSession?.remoteCommandCenter else { return }
+        func add(_ command: MPRemoteCommand, _ action: @escaping (MPRemoteCommandEvent) -> Bool) {
+            command.isEnabled = true
+            let target = command.addTarget { [weak self] event in
+                guard let self, !self.stopped else { return .commandFailed }
+                return MainActor.assumeIsolated { action(event) } ? .success : .commandFailed
+            }
+            commandTargets.append((command, target))
+        }
+        add(center.playCommand) { [unowned self] _ in engine.play(); return true }
+        add(center.pauseCommand) { [unowned self] _ in engine.pause(); return true }
+        add(center.togglePlayPauseCommand) { [unowned self] _ in
+            if case .playing = engine.state { engine.pause() } else { engine.play() }
+            return true
+        }
+        center.skipForwardCommand.preferredIntervals = [10]
+        center.skipBackwardCommand.preferredIntervals = [10]
+        add(center.skipForwardCommand) { [unowned self] _ in seek(by: 10); return true }
+        add(center.skipBackwardCommand) { [unowned self] _ in seek(by: -10); return true }
+        add(center.changePlaybackPositionCommand) { [unowned self] event in
+            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return false }
+            command(["name": "seek", "value": event.positionTime])
+            return true
+        }
+    }
+
+    private func seek(by seconds: Double) {
+        let now = engine.clock.currentTime
+        guard now.isFinite else { return }
+        command(["name": "seek", "value": now + seconds])
     }
 
     func command(_ request: NSDictionary) {
@@ -403,6 +467,9 @@ private final class EmbeddedSession {
         stopped = true
         cueUpdates?.cancel()
         cueUpdates = nil
+        artworkTask?.cancel()
+        for (command, target) in commandTargets { command.removeTarget(target) }
+        commandTargets = []
         timer?.invalidate()
         loadTask?.cancel()
         seekTask?.cancel()
