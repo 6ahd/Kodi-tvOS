@@ -76,6 +76,9 @@ enables its `TrueHDObjectAudio` and `DTSXObjectAudio` traits. Subtitle snapshots
 binary index over the retained cues instead of scanning the entire subtitle
 file every 100 ms. This reduces subtitle work without changing cue timing.
 
+### Build on an external drive (recommended)
+Everything (Kodi's dependencies, the Kodi checkout, every build product, temporary files and the finished IPAs) lives in one folder on an external drive, default `/Volumes/Backup/DexHub-Env`. One command builds and checks the whole app: `bash env/build.sh`. See [env/README-AR.md](env/README-AR.md).
+
 ### Build from source (Mac)
 First time on a Mac (downloads Kodi 22 RC1 and builds its dependencies once; this takes a while):
 ```bash
@@ -150,6 +153,9 @@ bash FIX-SIGNING.command /path/to/file.ipa
 | `script.dexhub.tvos.players` و`script.module.dexhub.tvos.compat` | اختيار المشغل وتوافق tvOS |
 | `assets/` | إضافات خارجية مضمّنة في التطبيق |
 | `tests/` | اختبارات Linux للسكربتات والإضافة |
+
+### البناء على الهارديسك الخارجي (المفضّل)
+كل شي (اعتماديات Kodi، نسخة Kodi، نواتج البناء، الملفات المؤقتة، وملفات IPA الجاهزة) في مجلد واحد على الهارديسك، افتراضيا `/Volumes/Backup/DexHub-Env`. أمر واحد يبني التطبيق كامل ويفحصه: `bash env/build.sh`. التفاصيل في [env/README-AR.md](env/README-AR.md).
 
 ### البناء من السورس (ماك)
 أول مرة على الماك (ينزل Kodi 22 RC1 ويبني اعتمادياته مرة واحدة، ويطول):
