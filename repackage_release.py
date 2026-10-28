@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Make a new IPA from a released one plus a fresh Kodi and Aether bridge build.
 
-Usage: repackage_release.py BASE_IPA KODI_APP BRIDGE_PRODUCTS OUTPUT_FOLDER
+Usage: repackage_release.py BASE_IPA KODI_APP BRIDGE_PRODUCTS OUTPUT_FOLDER [APPLE_UI_FRAMEWORK]
 
 BASE_IPA         a released DexHub IPA; its bundled add-ons, fonts, licences and
                  Python compatibility files are kept as they are
 KODI_APP         Kodi.app from integrate.sh's xcodebuild (Release-appletvos)
 BRIDGE_PRODUCTS  Release-appletvos folder of the DexAetherBridge build
+APPLE_UI_FRAMEWORK  DexAppleUI.framework (apple-ui/build.sh): the native Apple TV
+                 screens; without it the app opens in Kodi as before
 
 Every file Kodi's build produces replaces the released copy (binary, asset
 catalogue, splash, system files, top shelf extension), except the add-ons
@@ -24,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 base_ipa, kodi_app, products, output = map(Path, sys.argv[1:5])
+apple_ui = Path(sys.argv[5]) if len(sys.argv) > 5 else None
 repo = Path(__file__).resolve().parent
 release = json.loads((repo / 'ENGINE-RELEASE.json').read_text())
 APP = 'Payload/Kodi.app/'
@@ -41,6 +44,10 @@ with tempfile.TemporaryDirectory(dir=output) as temporary:
             shutil.copytree(framework, frameworks / framework.name, symlinks=True, dirs_exist_ok=True)
     shutil.copytree(repo / 'vendor/DexNavigationKit.framework', frameworks / 'DexNavigationKit.framework',
                     dirs_exist_ok=True)
+    if apple_ui:
+        if not (apple_ui / 'DexAppleUI').is_file():
+            raise SystemExit('DexAppleUI.framework missing: ' + str(apple_ui))
+        shutil.copytree(apple_ui, frameworks / 'DexAppleUI.framework', symlinks=True, dirs_exist_ok=True)
     resources = products / 'AetherEngine_AetherEngine.bundle'
     if not (resources / 'silent-atmos.mp4').is_file():
         raise SystemExit('Aether resource bundle missing from the bridge build')

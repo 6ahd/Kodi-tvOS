@@ -24,6 +24,9 @@ A modified Kodi 22 for Apple TV with:
 - **Back on the Home screen** returns to the Apple TV Home screen, as in other apps (not when a dialog is open or something plays). A skin or add-on can keep Back by setting `Window(Home).Property(dexhub.keepback)`.
 - **Dex Hub icon** in three parallax layers, matching top shelf image, one calm launch screen and splash, the name "Dex Hub", and dark system keyboards and alerts.
 
+### Apple mode and Kodi mode (v21.70, first stage)
+The app opens on native Apple TV screens (`apple-ui/`, SwiftUI) drawn over Kodi, which keeps running underneath: Home rows built from an add-on's folders (Dex Hub by default; pick another in Settings), every installed video add-on browsable in the same design, details pages with the title's clear logo, and Apple TV's own focus effects. Playing goes through Kodi and Aether. **Kodi Mode** shows the full Kodi with the Dex Hub skin; Back on Kodi's Home returns to the native screens, as does the builtin `DexHub.AppleMode`. Kodi dialogs (source pickers, progress, keyboards) come to the front while open. Plan: [apple-ui/PLAN-AR.md](apple-ui/PLAN-AR.md).
+
 ### Requirements
 - Apple TV 4K on **tvOS 26** or later.
 - To install: a signing tool and an Apple account (see below).
@@ -109,6 +112,9 @@ The build pins Aether 7.47.0 (commit `a1a70cd`) and its packages, builds the sma
 - **التشغيل الآن (Now Playing):** أثناء التشغيل بـ Aether يظهر في مركز التحكم وريموت الآيفون وSiri اسم العمل والمسلسل أو السنة والبوستر، وتشتغل منها أزرار التشغيل والإيقاف والتقديم والترجيع 10 ثواني وشريط الوقت، ومشغل Kodi يتبع الإيقاف اللي يصير منها.
 - **زر الرجوع في الصفحة الرئيسية** يرجعك لشاشة Apple TV الرئيسية مثل باقي التطبيقات (إلا لو فيه نافذة مفتوحة أو شي يشتغل). السكين أو الإضافة تقدر تمنع هذا بالخاصية `Window(Home).Property(dexhub.keepback)`.
 - **أيقونة Dex Hub** بثلاث طبقات تتحرك مع التحديد (parallax)، وصورة رف علوي بنفس الشكل، وشاشة إطلاق هادئة نفسها شاشة البداية، واسم التطبيق "Dex Hub"، ولوحة المفاتيح والتنبيهات بالوضع الداكن.
+
+### وضع Apple ووضع Kodi (v21.70، المرحلة الأولى)
+التطبيق يفتح على شاشات Apple TV أصلية (`apple-ui/` بـ SwiftUI) فوق Kodi اللي يبقى شغال تحت: صفوف الرئيسية من مجلدات إضافة (Dex Hub افتراضيا، وتقدر تختار غيرها من الإعدادات)، وكل إضافات الفيديو المثبتة تتصفحها بنفس التصميم، وصفحة تفاصيل فيها Clear Logo، وتأثيرات التركيز الأصلية من Apple TV. التشغيل عبر Kodi وAether. **Kodi Mode** يعرض Kodi كامل بسكين Dex Hub، وزر الرجوع في رئيسية Kodi يرجعك للشاشات الأصلية، وكذلك الأمر `DexHub.AppleMode`. نوافذ Kodi (اختيار المصدر، التقدم، الكيبورد) تطلع قدام وقت ما تكون مفتوحة. الخطة: [apple-ui/PLAN-AR.md](apple-ui/PLAN-AR.md).
 
 ### المتطلبات
 - Apple TV 4K بنظام **tvOS 26** أو أحدث.

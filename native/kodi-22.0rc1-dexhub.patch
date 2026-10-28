@@ -601,21 +601,22 @@ index 58d3b5b..9c2dc5c 100644
             {"installfromzip",             { "Open the install from zip dialog", 0, InstallFromZip}},
             {"runaddon",                   {"Run the specified plugin/script", 1, RunAddon}},
 diff --git a/xbmc/interfaces/builtins/SystemBuiltins.cpp b/xbmc/interfaces/builtins/SystemBuiltins.cpp
-index a18e3a3..7c7dd32 100644
+index a18e3a3..2e5be96 100644
 --- a/xbmc/interfaces/builtins/SystemBuiltins.cpp
 +++ b/xbmc/interfaces/builtins/SystemBuiltins.cpp
-@@ -12,6 +12,10 @@
+@@ -12,6 +12,11 @@
  #include "messaging/ApplicationMessenger.h"
  #include "utils/StringUtils.h"
  
 +#if defined(TARGET_DARWIN_TVOS)
++#include "platform/darwin/tvos/TVOSAppleMode.h"
 +#include "platform/darwin/tvos/TVOSExternalApp.h"
 +#endif
 +
  /*! \brief Execute a system executable.
   *  \param params The parameters.
   *  \details params[0] = The path to the executable.
-@@ -251,6 +255,17 @@ static int Suspend(const std::vector<std::string>& params)
+@@ -251,6 +256,30 @@ static int Suspend(const std::vector<std::string>& params)
  /// \table_end
  ///
  
@@ -630,17 +631,31 @@ index a18e3a3..7c7dd32 100644
 +#endif
 +}
 +
++/*! \brief Show the native Apple TV screens over Kodi (leave Kodi mode).
++ *  \param params (ignored)
++ */
++static int AppleMode(const std::vector<std::string>& params)
++{
++#if defined(TARGET_DARWIN_TVOS)
++  CTVOSAppleMode::SetWanted(true);
++  return 0;
++#else
++  return -1;
++#endif
++}
++
  CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
  {
    return {{"activatescreensaver", {"Activate Screensaver", 0, ActivateScreensaver}},
-@@ -269,5 +284,7 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
+@@ -269,5 +298,8 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
            {"suspend", {"Suspends the system", 0, Suspend}},
            {"system.exec", {"Execute shell commands", 1, Exec<0>}},
            {"system.execwait",
 -           {"Execute shell commands and freezes Kodi until shell is closed", 1, Exec<1>}}};
 +           {"Execute shell commands and freezes Kodi until shell is closed", 1, Exec<1>}},
 +          {"system.openurl",
-+           {"Open an external app via its URL scheme, e.g. infuse://...", 1, OpenURL}}};
++           {"Open an external app via its URL scheme, e.g. infuse://...", 1, OpenURL}},
++          {"dexhub.applemode", {"Show the native Apple TV screens over Kodi", 0, AppleMode}}};
  }
 diff --git a/xbmc/interfaces/legacy/Control.cpp b/xbmc/interfaces/legacy/Control.cpp
 index 21c6ebf..0c5b841 100644
@@ -659,13 +674,14 @@ index 21c6ebf..0c5b841 100644
        CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg, iParentId);
      }
 diff --git a/xbmc/platform/darwin/tvos/CMakeLists.txt b/xbmc/platform/darwin/tvos/CMakeLists.txt
-index 5a7af7e..26043ec 100644
+index 5a7af7e..f3f3771 100644
 --- a/xbmc/platform/darwin/tvos/CMakeLists.txt
 +++ b/xbmc/platform/darwin/tvos/CMakeLists.txt
-@@ -1,6 +1,11 @@
+@@ -1,6 +1,12 @@
 -set(SOURCES PreflightHandler.mm
-+set_source_files_properties(TVOSNativeSkin.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
++set_source_files_properties(TVOSNativeSkin.mm TVOSAppleMode.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 +set(SOURCES TVOSNativeSkin.mm
++            TVOSAppleMode.mm
 +            TVOSDexHubSetup.mm
 +            TVOSAetherPlayer.mm
 +            PreflightHandler.mm
@@ -675,12 +691,13 @@ index 5a7af7e..26043ec 100644
              TVOSKeyboardView.mm
              TVOSNSUserDefaults.mm
              TVOSSettingsHandler.mm
-@@ -8,9 +13,13 @@ set(SOURCES PreflightHandler.mm
+@@ -8,9 +14,14 @@ set(SOURCES PreflightHandler.mm
              TVOSTopShelf.mm
              XBMCController.mm)
  
 -set(HEADERS PreflightHandler.h
 +set(HEADERS TVOSNativeSkin.h
++            TVOSAppleMode.h
 +            TVOSDexHubSetup.h
 +            TVOSAetherPlayer.h
 +            PreflightHandler.h
@@ -1533,6 +1550,213 @@ index 0000000..324f8b4
 +    state.overlays.Render(0);
 +  }
 +}
+diff --git a/xbmc/platform/darwin/tvos/TVOSAppleMode.h b/xbmc/platform/darwin/tvos/TVOSAppleMode.h
+new file mode 100644
+index 0000000..0251c43
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSAppleMode.h
+@@ -0,0 +1,32 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#pragma once
++
++#ifdef __OBJC__
++#import <UIKit/UIKit.h>
++#endif
++
++// The native Apple TV interface (DexAppleUI.framework) shown over Kodi.
++// Kodi keeps running underneath: the native screens read it through
++// JSON-RPC and play through it. While a Kodi dialog is open or a video
++// plays, Kodi shows; Kodi mode hides the native screens until Back is
++// pressed on Kodi's Home window or DexHub.AppleMode runs.
++class CTVOSAppleMode
++{
++public:
++  // Main thread, once the controller's view exists.
++  static void Start();
++  // The native screens are on screen and own the remote.
++  static bool IsShown();
++  // DexAppleUI.framework loaded: Back on Kodi's Home returns to it.
++  static bool IsAvailable();
++  // The native interface exists and the person has not chosen Kodi mode.
++  static bool IsWanted();
++  // Any thread: show the native interface again (or leave it, false).
++  static void SetWanted(bool wanted);
++  // Main thread: Back on Kodi's Home window returns to the native screens.
++  static bool HandleBackFromKodi();
++#ifdef __OBJC__
++  // Main thread: the native screens while shown, for focus; nil otherwise.
++  static UIViewController* Controller();
++#endif
++};
+diff --git a/xbmc/platform/darwin/tvos/TVOSAppleMode.mm b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
+new file mode 100644
+index 0000000..06744da
+--- /dev/null
++++ b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
+@@ -0,0 +1,163 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++#include "TVOSAppleMode.h"
++
++#include "ServiceBroker.h"
++#include "application/ApplicationComponents.h"
++#include "application/ApplicationPlayer.h"
++#include "guilib/GUIComponent.h"
++#include "guilib/GUIWindowManager.h"
++#include "guilib/WindowIDs.h"
++#include "interfaces/json-rpc/JSONRPC.h"
++#include "interfaces/legacy/aojsonrpc.h"
++#include "utils/log.h"
++
++#import "platform/darwin/tvos/TVOSEAGLView.h"
++#import "platform/darwin/tvos/XBMCController.h"
++
++#include <atomic>
++#include <chrono>
++#include <string>
++#include <thread>
++
++@interface NSObject (DexAppleUIAPI)
+++ (UIViewController*)makeRootWithRPC:(void (^)(NSString*, void (^)(NSString*)))rpc
++                             command:(void (^)(NSString*))command;
++@end
++
++namespace
++{
++UIViewController* controller = nil; // main thread only
++std::atomic<bool> wanted{true};
++std::atomic<bool> ready{false}; // Kodi reached its Home window once
++std::atomic<bool> kodiNeeded{false}; // a Kodi dialog is open or something plays
++std::atomic<bool> shown{false};
++
++// Runs one JSON-RPC request the way Python add-ons do (xbmc.executeJSONRPC),
++// off the main thread: a plugin folder can take seconds.
++void RunRPC(NSString* request, void (^done)(NSString*))
++{
++  const std::string input = request.UTF8String ?: "";
++  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
++    CAddOnTransport transport;
++    CAddOnTransport::CAddOnClient client;
++    const std::string reply = JSONRPC::CJSONRPC::MethodCall(input, &transport, &client);
++    NSString* text = [NSString stringWithUTF8String:reply.c_str()] ?: @"{}";
++    dispatch_async(dispatch_get_main_queue(), ^{ done(text); });
++  });
++}
++
++// Main thread: show the native screens when wanted and Kodi needs no room.
++void Apply()
++{
++  const bool show = controller && ready && wanted && !kodiNeeded;
++  if (show == shown)
++    return;
++  shown = show;
++  controller.view.hidden = !show;
++  for (UIGestureRecognizer* recognizer in g_xbmcController.glView.gestureRecognizers)
++    recognizer.enabled = !show;
++  [g_xbmcController setNeedsFocusUpdate];
++  [g_xbmcController updateFocusIfNeeded];
++  CLog::Log(LOGINFO, "DexHub Apple mode: native screens {}", show ? "shown" : "hidden");
++}
++
++// Watches Kodi from its own thread, so the main thread never waits on Kodi's
++// GUI lock: playback and Kodi dialogs (source pickers, progress, keyboards)
++// need the screen, and get it until they close.
++void Monitor()
++{
++  while (true)
++  {
++    std::this_thread::sleep_for(std::chrono::milliseconds(200));
++    auto* gui = CServiceBroker::GetGUI();
++    if (!gui)
++      continue;
++    auto& windows = gui->GetWindowManager();
++    const bool home = windows.GetActiveWindow() == WINDOW_HOME;
++    const int dialog = windows.GetTopmostModalDialog(true);
++    const bool modal = dialog != WINDOW_INVALID && dialog != WINDOW_DIALOG_BUSY &&
++                       dialog != WINDOW_DIALOG_BUSY_NOCANCEL;
++    const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
++    const bool needed = modal || (player && player->IsPlaying());
++    const bool becameReady = home && !ready.exchange(true);
++    if (becameReady || needed != kodiNeeded.exchange(needed))
++      dispatch_async(dispatch_get_main_queue(), ^{ Apply(); });
++  }
++}
++} // namespace
++
++void CTVOSAppleMode::Start()
++{
++  if (controller)
++    return;
++  NSString* path = [NSBundle.mainBundle.privateFrameworksPath
++      stringByAppendingPathComponent:@"DexAppleUI.framework"];
++  NSError* error = nil;
++  if (![[NSBundle bundleWithPath:path] loadAndReturnError:&error])
++  {
++    CLog::Log(LOGINFO, "DexHub Apple mode unavailable: {}",
++              error.localizedDescription.UTF8String ?: "no DexAppleUI.framework");
++    return;
++  }
++  Class module = NSClassFromString(@"DexAppleUI");
++  if (![module respondsToSelector:@selector(makeRootWithRPC:command:)])
++  {
++    CLog::Log(LOGWARNING, "DexHub Apple mode: DexAppleUI has no entry point");
++    return;
++  }
++  controller = [module makeRootWithRPC:^(NSString* request, void (^done)(NSString*)) {
++    RunRPC(request, done);
++  }
++      command:^(NSString* name) {
++        if ([name isEqualToString:@"kodi"])
++          SetWanted(false);
++      }];
++  UIViewController* parent = g_xbmcController;
++  [parent addChildViewController:controller];
++  controller.view.frame = parent.view.bounds;
++  controller.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
++  controller.view.hidden = YES; // Kodi's splash shows until its Home window is up
++  [parent.view addSubview:controller.view];
++  [controller didMoveToParentViewController:parent];
++  std::thread(Monitor).detach();
++  CLog::Log(LOGINFO, "DexHub Apple mode ready");
++}
++
++bool CTVOSAppleMode::IsShown()
++{
++  return shown;
++}
++
++bool CTVOSAppleMode::IsAvailable()
++{
++  return controller != nil;
++}
++
++bool CTVOSAppleMode::IsWanted()
++{
++  return controller && wanted;
++}
++
++void CTVOSAppleMode::SetWanted(bool value)
++{
++  wanted = value;
++  dispatch_async(dispatch_get_main_queue(), ^{ Apply(); });
++}
++
++bool CTVOSAppleMode::HandleBackFromKodi()
++{
++  if (!controller || wanted || !ready)
++    return false;
++  auto& windows = CServiceBroker::GetGUI()->GetWindowManager();
++  const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
++  if (windows.GetActiveWindow() != WINDOW_HOME || windows.HasVisibleModalDialog() ||
++      player->IsPlaying())
++    return false;
++  SetWanted(true);
++  return true;
++}
++
++UIViewController* CTVOSAppleMode::Controller()
++{
++  return shown ? controller : nil;
++}
 diff --git a/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h b/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h
 new file mode 100644
 index 0000000..f80fb96
@@ -1835,6 +2059,28 @@ index 0000000..7fd023b
 +    }
 +  }
 +}
+diff --git a/xbmc/platform/darwin/tvos/TVOSEAGLView.mm b/xbmc/platform/darwin/tvos/TVOSEAGLView.mm
+index 0cbec10..53a6423 100644
+--- a/xbmc/platform/darwin/tvos/TVOSEAGLView.mm
++++ b/xbmc/platform/darwin/tvos/TVOSEAGLView.mm
+@@ -13,6 +13,7 @@
+ #include "utils/log.h"
+ 
+ #import "platform/darwin/DarwinUtils.h"
++#import "platform/darwin/tvos/TVOSAppleMode.h"
+ #import "platform/darwin/tvos/XBMCController.h"
+ 
+ #import <signal.h>
+@@ -76,7 +77,8 @@ - (void)dealloc
+ - (BOOL)canBecomeFocused
+ {
+   // need this or we do not get GestureRecognizers under tvos.
+-  return YES;
++  // Not while the native Apple TV screens are shown: focus stays with them.
++  return !CTVOSAppleMode::IsShown();
+ }
+ 
+ - (void)setContext:(EAGLContext*)newContext
 diff --git a/xbmc/platform/darwin/tvos/TVOSExternalApp.h b/xbmc/platform/darwin/tvos/TVOSExternalApp.h
 new file mode 100644
 index 0000000..bd519ca
@@ -2873,10 +3119,18 @@ index f0d7152..e2d4f47 100644
  {
    NSLog(@"We Got a Pipe Signal: %d____________", s);
 diff --git a/xbmc/platform/darwin/tvos/XBMCController.mm b/xbmc/platform/darwin/tvos/XBMCController.mm
-index 1c09a47..08671b2 100644
+index 1c09a47..bd548c4 100644
 --- a/xbmc/platform/darwin/tvos/XBMCController.mm
 +++ b/xbmc/platform/darwin/tvos/XBMCController.mm
-@@ -91,7 +91,6 @@ - (void)viewDidLoad
+@@ -33,6 +33,7 @@
+ 
+ #import "platform/darwin/ios-common/AnnounceReceiver.h"
+ #import "platform/darwin/ios-common/DarwinEmbedNowPlayingInfoManager.h"
++#import "platform/darwin/tvos/TVOSAppleMode.h"
+ #import "platform/darwin/tvos/TVOSDisplayManager.h"
+ #import "platform/darwin/tvos/TVOSEAGLView.h"
+ #import "platform/darwin/tvos/TVOSTopShelf.h"
+@@ -91,12 +92,20 @@ - (void)viewDidLoad
    self.view.backgroundColor = UIColor.blackColor;
    [self.view addSubview:glView];
  
@@ -2884,7 +3138,21 @@ index 1c09a47..08671b2 100644
    [inputHandler.inputTouch createPanGestureRecognizers];
    [inputHandler.inputTouch createPressGesturecognizers];
    [inputHandler.inputTouch createTapGesturecognizers];
-@@ -115,6 +114,7 @@ - (void)viewDidAppear:(BOOL)animated
+ 
+   [displayManager addModeSwitchObserver];
++  CTVOSAppleMode::Start();
++}
++
++- (NSArray<id<UIFocusEnvironment>>*)preferredFocusEnvironments
++{
++  // The native Apple TV screens own focus while they are shown.
++  if (UIViewController* apple = CTVOSAppleMode::Controller())
++    return @[ apple ];
++  return [super preferredFocusEnvironments];
+ }
+ 
+ - (void)viewWillAppear:(BOOL)animated
+@@ -115,6 +124,7 @@ - (void)viewDidAppear:(BOOL)animated
  
  - (void)viewWillDisappear:(BOOL)animated
  {
@@ -3058,10 +3326,10 @@ index 6f4cb16..23aa492 100644
  - (void)createPressGesturecognizers;
  - (void)menuPressed:(UITapGestureRecognizer*)sender;
 diff --git a/xbmc/platform/darwin/tvos/input/LibInputTouch.mm b/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
-index 1a86773..3ced3c1 100644
+index 1a86773..4dc7c5b 100644
 --- a/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
 +++ b/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
-@@ -12,6 +12,7 @@
+@@ -12,9 +12,11 @@
  #include "application/ApplicationComponents.h"
  #include "application/ApplicationPlayer.h"
  #include "guilib/GUIComponent.h"
@@ -3069,7 +3337,11 @@ index 1a86773..3ced3c1 100644
  #include "guilib/GUIWindowManager.h"
  #include "utils/log.h"
  
-@@ -65,14 +66,16 @@ - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldReceiveP
++#import "platform/darwin/tvos/TVOSAppleMode.h"
+ #import "platform/darwin/tvos/TVOSEAGLView.h"
+ #import "platform/darwin/tvos/XBMCController.h"
+ #import "platform/darwin/tvos/input/LibInputHandler.h"
+@@ -65,14 +67,19 @@ - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldReceiveP
      // single press key, but also detect hold and back to tvos.
      case UIPressTypeMenu:
      {
@@ -3086,13 +3358,16 @@ index 1a86773..3ced3c1 100644
 -          !appPlayer->IsPlaying())
 +      auto& windowManager = CServiceBroker::GetGUI()->GetWindowManager();
 +      const CGUIWindow* home = windowManager.GetWindow(WINDOW_HOME);
++      // With the native Apple TV screens, Back on Kodi's Home returns to them
++      // instead (menuPressed), and Back on their top level leaves the app.
 +      if (windowManager.GetActiveWindow() == WINDOW_HOME &&
 +          !windowManager.HasVisibleModalDialog() && !appPlayer->IsPlaying() &&
-+          !(home && home->GetProperty("dexhub.keepback").asBoolean()))
++          !(home && home->GetProperty("dexhub.keepback").asBoolean()) &&
++          !CTVOSAppleMode::IsAvailable())
          handled = NO;
        break;
      }
-@@ -118,6 +121,11 @@ - (void)createPanGestureRecognizers
+@@ -118,6 +125,11 @@ - (void)createPanGestureRecognizers
    // for pan gestures with one finger
    auto pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
    pan.delegate = self;
@@ -3104,7 +3379,16 @@ index 1a86773..3ced3c1 100644
    [g_xbmcController.glView addGestureRecognizer:pan];
  }
  
-@@ -372,6 +380,8 @@ - (IBAction)IRRemoteUpArrowPressed:(UIGestureRecognizer*)sender
+@@ -239,6 +251,8 @@ - (void)menuPressed:(UITapGestureRecognizer*)sender
+   switch (sender.state)
+   {
+     case UIGestureRecognizerStateEnded:
++      if (CTVOSAppleMode::HandleBackFromKodi())
++        break;
+       CLog::Log(LOGDEBUG, "Input: Siri remote menu press (id: 6)");
+       [g_xbmcController.inputHandler sendButtonPressed:6];
+       [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
+@@ -372,6 +386,8 @@ - (IBAction)IRRemoteUpArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3113,7 +3397,7 @@ index 1a86773..3ced3c1 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -391,6 +401,8 @@ - (IBAction)IRRemoteDownArrowPressed:(UIGestureRecognizer*)sender
+@@ -391,6 +407,8 @@ - (IBAction)IRRemoteDownArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3122,7 +3406,7 @@ index 1a86773..3ced3c1 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -410,6 +422,8 @@ - (IBAction)IRRemoteLeftArrowPressed:(UIGestureRecognizer*)sender
+@@ -410,6 +428,8 @@ - (IBAction)IRRemoteLeftArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3131,7 +3415,7 @@ index 1a86773..3ced3c1 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -429,6 +443,8 @@ - (IBAction)IRRemoteRightArrowPressed:(UIGestureRecognizer*)sender
+@@ -429,6 +449,8 @@ - (IBAction)IRRemoteRightArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3140,7 +3424,7 @@ index 1a86773..3ced3c1 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -480,85 +496,79 @@ - (IBAction)tapRightArrowPressed:(UIGestureRecognizer*)sender
+@@ -480,85 +502,79 @@ - (IBAction)tapRightArrowPressed:(UIGestureRecognizer*)sender
  
  - (IBAction)handlePan:(UIPanGestureRecognizer*)sender
  {
