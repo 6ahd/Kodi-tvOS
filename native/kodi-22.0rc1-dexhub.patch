@@ -80,6 +80,22 @@ index 14f70f9..dba8300 100644
 +msgctxt "#50005"
 +msgid "9.1.6"
 +msgstr ""
+diff --git a/cmake/scripts/darwin_embedded/ArchSetup.cmake b/cmake/scripts/darwin_embedded/ArchSetup.cmake
+index da180e7..ac698cf 100644
+--- a/cmake/scripts/darwin_embedded/ArchSetup.cmake
++++ b/cmake/scripts/darwin_embedded/ArchSetup.cmake
+@@ -41,6 +41,11 @@ list(APPEND DEPLIBS "-framework CoreFoundation" "-framework CoreVideo"
+                     "-framework VideoToolbox" "-lresolv" "-ObjC"
+                     "-framework AVKit" "-framework GameController")
+ 
++# DexHub: the app asks tvOS to reload its Top Shelf (TVTopShelfContentProvider)
++if(CORE_PLATFORM_NAME_LC STREQUAL tvos)
++  list(APPEND DEPLIBS "-framework TVServices")
++endif()
++
+ # Speech not available on tvOS
+ if(NOT CORE_PLATFORM_NAME_LC STREQUAL tvos)
+   list(APPEND DEPLIBS "-framework Speech")
 diff --git a/system/settings/darwin_tvos.xml b/system/settings/darwin_tvos.xml
 index 13e821f..0cd7461 100644
 --- a/system/settings/darwin_tvos.xml
@@ -156,10 +172,10 @@ index ba0c047..25a4073 100644
  
    m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
 diff --git a/xbmc/application/Application.cpp b/xbmc/application/Application.cpp
-index 7362719..5b502c7 100644
+index 7362719..547f9e6 100644
 --- a/xbmc/application/Application.cpp
 +++ b/xbmc/application/Application.cpp
-@@ -7,6 +7,13 @@
+@@ -7,6 +7,14 @@
   */
  
  #include "Application.h"
@@ -169,11 +185,12 @@ index 7362719..5b502c7 100644
 +
 +#if defined(TARGET_DARWIN_TVOS)
 +#include "platform/darwin/tvos/TVOSDexHubSetup.h"
++#include "platform/darwin/tvos/TVOSTopShelf.h"
 +#endif
  
  #include "Autorun.h"
  #include "CompileInfo.h"
-@@ -458,7 +465,14 @@ bool CApplication::CreateGUI()
+@@ -458,7 +466,14 @@ bool CApplication::CreateGUI()
  
    // Retrieve the matching resolution based on GUI settings
    bool sav_res = false;
@@ -188,7 +205,7 @@ index 7362719..5b502c7 100644
    CLog::Log(LOGINFO, "Checking resolution {}",
              CDisplaySettings::GetInstance().GetCurrentResolution());
    if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
-@@ -726,6 +740,9 @@ bool CApplication::Initialize()
+@@ -726,6 +741,9 @@ bool CApplication::Initialize()
      }
  
      CServiceBroker::RegisterTextureCache(std::make_shared<CTextureCache>());
@@ -198,7 +215,20 @@ index 7362719..5b502c7 100644
  
      std::string skinId = settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN);
      if (!skinHandling->LoadSkin(skinId))
-@@ -936,6 +953,12 @@ void CApplication::Render()
+@@ -827,6 +845,12 @@ bool CApplication::Initialize()
+     CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
+   }
+ 
++#if defined(TARGET_DARWIN_TVOS)
++  // A Top Shelf item that launched the app runs now that Kodi is up; before,
++  // it ran only when the app came back from the background.
++  CTVOSTopShelf::GetInstance().RunTopShelf();
++#endif
++
+   return true;
+ }
+ 
+@@ -936,6 +960,12 @@ void CApplication::Render()
      m_lastRenderTime = std::chrono::steady_clock::now();
    }
  
@@ -211,7 +241,7 @@ index 7362719..5b502c7 100644
    if (compositing)
      CServiceBroker::GetWinSystem()->EndGuiComposite();
  
-@@ -972,6 +995,11 @@ void CApplication::Render()
+@@ -972,6 +1002,11 @@ void CApplication::Render()
    CServiceBroker::GetWinSystem()->GetGfxContext().Flip(hasRendered,
                                                         appPlayer->IsRenderingVideoLayer());
  
@@ -223,7 +253,7 @@ index 7362719..5b502c7 100644
    CTimeUtils::UpdateFrameTime(hasRendered);
  }
  
-@@ -1631,6 +1659,14 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
+@@ -1631,6 +1666,14 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
          !CServiceBroker::GetGUI()->GetWindowManager().HasDirtyRegions())
        m_skipGuiRender = true;
      CServiceBroker::GetGUI()->GetWindowManager().FrameMove();
@@ -601,7 +631,7 @@ index 58d3b5b..9c2dc5c 100644
             {"installfromzip",             { "Open the install from zip dialog", 0, InstallFromZip}},
             {"runaddon",                   {"Run the specified plugin/script", 1, RunAddon}},
 diff --git a/xbmc/interfaces/builtins/SystemBuiltins.cpp b/xbmc/interfaces/builtins/SystemBuiltins.cpp
-index a18e3a3..2e5be96 100644
+index a18e3a3..73dc6e6 100644
 --- a/xbmc/interfaces/builtins/SystemBuiltins.cpp
 +++ b/xbmc/interfaces/builtins/SystemBuiltins.cpp
 @@ -12,6 +12,11 @@
@@ -609,14 +639,14 @@ index a18e3a3..2e5be96 100644
  #include "utils/StringUtils.h"
  
 +#if defined(TARGET_DARWIN_TVOS)
-+#include "platform/darwin/tvos/TVOSAppleMode.h"
 +#include "platform/darwin/tvos/TVOSExternalApp.h"
++#include "platform/darwin/tvos/TVOSTopShelf.h"
 +#endif
 +
  /*! \brief Execute a system executable.
   *  \param params The parameters.
   *  \details params[0] = The path to the executable.
-@@ -251,6 +256,30 @@ static int Suspend(const std::vector<std::string>& params)
+@@ -251,6 +256,31 @@ static int Suspend(const std::vector<std::string>& params)
  /// \table_end
  ///
  
@@ -631,13 +661,14 @@ index a18e3a3..2e5be96 100644
 +#endif
 +}
 +
-+/*! \brief Show the native Apple TV screens over Kodi (leave Kodi mode).
-+ *  \param params (ignored)
++/*! \brief Show rows on the Apple TV Top Shelf.
++ *  \param params The JSON file with the rows (see CTVOSTopShelf::SetDexHubShelf).
 + */
-+static int AppleMode(const std::vector<std::string>& params)
++static int TopShelfSet(const std::vector<std::string>& params)
 +{
 +#if defined(TARGET_DARWIN_TVOS)
-+  CTVOSAppleMode::SetWanted(true);
++  if (!params.empty() && !params[0].empty())
++    CTVOSTopShelf::GetInstance().SetDexHubShelf(params[0]);
 +  return 0;
 +#else
 +  return -1;
@@ -647,7 +678,7 @@ index a18e3a3..2e5be96 100644
  CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
  {
    return {{"activatescreensaver", {"Activate Screensaver", 0, ActivateScreensaver}},
-@@ -269,5 +298,8 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
+@@ -269,5 +299,8 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
            {"suspend", {"Suspends the system", 0, Suspend}},
            {"system.exec", {"Execute shell commands", 1, Exec<0>}},
            {"system.execwait",
@@ -655,7 +686,7 @@ index a18e3a3..2e5be96 100644
 +           {"Execute shell commands and freezes Kodi until shell is closed", 1, Exec<1>}},
 +          {"system.openurl",
 +           {"Open an external app via its URL scheme, e.g. infuse://...", 1, OpenURL}},
-+          {"dexhub.applemode", {"Show the native Apple TV screens over Kodi", 0, AppleMode}}};
++          {"topshelf.set", {"Rows for the Apple TV Top Shelf, from a JSON file", 1, TopShelfSet}}};
  }
 diff --git a/xbmc/interfaces/legacy/Control.cpp b/xbmc/interfaces/legacy/Control.cpp
 index 21c6ebf..0c5b841 100644
@@ -674,14 +705,13 @@ index 21c6ebf..0c5b841 100644
        CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg, iParentId);
      }
 diff --git a/xbmc/platform/darwin/tvos/CMakeLists.txt b/xbmc/platform/darwin/tvos/CMakeLists.txt
-index 5a7af7e..f3f3771 100644
+index 5a7af7e..26043ec 100644
 --- a/xbmc/platform/darwin/tvos/CMakeLists.txt
 +++ b/xbmc/platform/darwin/tvos/CMakeLists.txt
-@@ -1,6 +1,12 @@
+@@ -1,6 +1,11 @@
 -set(SOURCES PreflightHandler.mm
-+set_source_files_properties(TVOSNativeSkin.mm TVOSAppleMode.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
++set_source_files_properties(TVOSNativeSkin.mm PROPERTIES COMPILE_FLAGS "-fobjc-arc")
 +set(SOURCES TVOSNativeSkin.mm
-+            TVOSAppleMode.mm
 +            TVOSDexHubSetup.mm
 +            TVOSAetherPlayer.mm
 +            PreflightHandler.mm
@@ -691,13 +721,12 @@ index 5a7af7e..f3f3771 100644
              TVOSKeyboardView.mm
              TVOSNSUserDefaults.mm
              TVOSSettingsHandler.mm
-@@ -8,9 +14,14 @@ set(SOURCES PreflightHandler.mm
+@@ -8,9 +13,13 @@ set(SOURCES PreflightHandler.mm
              TVOSTopShelf.mm
              XBMCController.mm)
  
 -set(HEADERS PreflightHandler.h
 +set(HEADERS TVOSNativeSkin.h
-+            TVOSAppleMode.h
 +            TVOSDexHubSetup.h
 +            TVOSAetherPlayer.h
 +            PreflightHandler.h
@@ -1550,228 +1579,6 @@ index 0000000..324f8b4
 +    state.overlays.Render(0);
 +  }
 +}
-diff --git a/xbmc/platform/darwin/tvos/TVOSAppleMode.h b/xbmc/platform/darwin/tvos/TVOSAppleMode.h
-new file mode 100644
-index 0000000..0251c43
---- /dev/null
-+++ b/xbmc/platform/darwin/tvos/TVOSAppleMode.h
-@@ -0,0 +1,32 @@
-+// SPDX-License-Identifier: GPL-2.0-or-later
-+#pragma once
-+
-+#ifdef __OBJC__
-+#import <UIKit/UIKit.h>
-+#endif
-+
-+// The native Apple TV interface (DexAppleUI.framework) shown over Kodi.
-+// Kodi keeps running underneath: the native screens read it through
-+// JSON-RPC and play through it. While a Kodi dialog is open or a video
-+// plays, Kodi shows; Kodi mode hides the native screens until Back is
-+// pressed on Kodi's Home window or DexHub.AppleMode runs.
-+class CTVOSAppleMode
-+{
-+public:
-+  // Main thread, once the controller's view exists.
-+  static void Start();
-+  // The native screens are on screen and own the remote.
-+  static bool IsShown();
-+  // DexAppleUI.framework loaded: Back on Kodi's Home returns to it.
-+  static bool IsAvailable();
-+  // The native interface exists and the person has not chosen Kodi mode.
-+  static bool IsWanted();
-+  // Any thread: show the native interface again (or leave it, false).
-+  static void SetWanted(bool wanted);
-+  // Main thread: Back on Kodi's Home window returns to the native screens.
-+  static bool HandleBackFromKodi();
-+#ifdef __OBJC__
-+  // Main thread: the native screens while shown, for focus; nil otherwise.
-+  static UIViewController* Controller();
-+#endif
-+};
-diff --git a/xbmc/platform/darwin/tvos/TVOSAppleMode.mm b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
-new file mode 100644
-index 0000000..8b938d1
---- /dev/null
-+++ b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
-@@ -0,0 +1,178 @@
-+// SPDX-License-Identifier: GPL-2.0-or-later
-+#include "TVOSAppleMode.h"
-+
-+#include "ServiceBroker.h"
-+#include "filesystem/SpecialProtocol.h"
-+#include "application/ApplicationComponents.h"
-+#include "application/ApplicationPlayer.h"
-+#include "guilib/GUIComponent.h"
-+#include "guilib/GUIWindowManager.h"
-+#include "guilib/WindowIDs.h"
-+#include "interfaces/json-rpc/JSONRPC.h"
-+#include "interfaces/legacy/aojsonrpc.h"
-+#include "utils/log.h"
-+#include "windowing/WinSystem.h"
-+
-+#import "platform/darwin/tvos/TVOSEAGLView.h"
-+#import "platform/darwin/tvos/XBMCController.h"
-+
-+#include <atomic>
-+#include <chrono>
-+#include <string>
-+#include <thread>
-+
-+@interface NSObject (DexAppleUIAPI)
-++ (UIViewController*)makeRootWithRPC:(void (^)(NSString*, void (^)(NSString*)))rpc
-+                             command:(void (^)(NSString*))command;
-+@end
-+
-+namespace
-+{
-+UIViewController* controller = nil; // main thread only
-+std::atomic<bool> wanted{true};
-+std::atomic<bool> ready{false}; // Kodi reached its Home window once
-+std::atomic<bool> kodiNeeded{false}; // a Kodi dialog is open or something plays
-+std::atomic<bool> shown{false};
-+
-+// Runs one JSON-RPC request the way Python add-ons do (xbmc.executeJSONRPC),
-+// off the main thread: a plugin folder can take seconds.
-+void RunRPC(NSString* request, void (^done)(NSString*))
-+{
-+  const std::string input = request.UTF8String ?: "";
-+  dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-+    CAddOnTransport transport;
-+    CAddOnTransport::CAddOnClient client;
-+    const std::string reply = JSONRPC::CJSONRPC::MethodCall(input, &transport, &client);
-+    NSString* text = [NSString stringWithUTF8String:reply.c_str()] ?: @"{}";
-+    dispatch_async(dispatch_get_main_queue(), ^{ done(text); });
-+  });
-+}
-+
-+// Main thread: show the native screens when wanted and Kodi needs no room.
-+void Apply()
-+{
-+  const bool show = controller && ready && wanted && !kodiNeeded;
-+  if (show == shown)
-+    return;
-+  shown = show;
-+  controller.view.hidden = !show;
-+  for (UIGestureRecognizer* recognizer in g_xbmcController.glView.gestureRecognizers)
-+    recognizer.enabled = !show;
-+  [g_xbmcController setNeedsFocusUpdate];
-+  [g_xbmcController updateFocusIfNeeded];
-+  CLog::Log(LOGINFO, "DexHub Apple mode: native screens {}", show ? "shown" : "hidden");
-+}
-+
-+// Watches Kodi from its own thread, so the main thread never waits on Kodi's
-+// GUI lock: playback and Kodi dialogs (source pickers, progress, keyboards)
-+// need the screen, and get it until they close.
-+void Monitor()
-+{
-+  while (true)
-+  {
-+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-+    // Dialog queries lock Kodi's graphics context: wait for its window system
-+    // and an initialised window manager.
-+    auto* gui = CServiceBroker::GetGUI();
-+    if (!gui || !CServiceBroker::GetWinSystem() || !gui->GetWindowManager().Initialized())
-+      continue;
-+    auto& windows = gui->GetWindowManager();
-+    const bool home = windows.GetActiveWindow() == WINDOW_HOME;
-+    const int dialog = windows.GetTopmostModalDialog(true);
-+    const bool modal = dialog != WINDOW_INVALID && dialog != WINDOW_DIALOG_BUSY &&
-+                       dialog != WINDOW_DIALOG_BUSY_NOCANCEL;
-+    const bool becameReady = home && !ready.exchange(true);
-+    if (!ready)
-+      continue; // nothing else of Kodi's is asked before its Home window is up
-+    const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
-+    const bool needed = modal || (player && player->IsPlaying());
-+    if (becameReady)
-+    {
-+      // Where Dex Hub keeps its source add-ons (providers.json), for the
-+      // native Sources section; Kodi's folders are known only once it runs.
-+      const std::string data =
-+          CSpecialProtocol::TranslatePath("special://profile/addon_data/plugin.video.dexhub.tvos/");
-+      [NSUserDefaults.standardUserDefaults setObject:@(data.c_str()) forKey:@"DexAppleDexHubData"];
-+    }
-+    if (becameReady || needed != kodiNeeded.exchange(needed))
-+      dispatch_async(dispatch_get_main_queue(), ^{ Apply(); });
-+  }
-+}
-+} // namespace
-+
-+void CTVOSAppleMode::Start()
-+{
-+  if (controller)
-+    return;
-+  NSString* path = [NSBundle.mainBundle.privateFrameworksPath
-+      stringByAppendingPathComponent:@"DexAppleUI.framework"];
-+  NSError* error = nil;
-+  if (![[NSBundle bundleWithPath:path] loadAndReturnError:&error])
-+  {
-+    // Start() runs in viewDidLoad, before Kodi's logger exists: CLog here
-+    // crashed v22.0 at launch. The system log works at any time.
-+    NSLog(@"DexHub Apple mode unavailable: %@", error.localizedDescription ?: @"no DexAppleUI.framework");
-+    return;
-+  }
-+  Class module = NSClassFromString(@"DexAppleUI");
-+  if (![module respondsToSelector:@selector(makeRootWithRPC:command:)])
-+  {
-+    NSLog(@"DexHub Apple mode: DexAppleUI has no entry point");
-+    return;
-+  }
-+  controller = [module makeRootWithRPC:^(NSString* request, void (^done)(NSString*)) {
-+    RunRPC(request, done);
-+  }
-+      command:^(NSString* name) {
-+        if ([name isEqualToString:@"kodi"])
-+          SetWanted(false);
-+      }];
-+  UIViewController* parent = g_xbmcController;
-+  [parent addChildViewController:controller];
-+  controller.view.frame = parent.view.bounds;
-+  controller.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-+  controller.view.hidden = YES; // Kodi's splash shows until its Home window is up
-+  [parent.view addSubview:controller.view];
-+  [controller didMoveToParentViewController:parent];
-+  std::thread(Monitor).detach();
-+  NSLog(@"DexHub Apple mode ready");
-+}
-+
-+bool CTVOSAppleMode::IsShown()
-+{
-+  return shown;
-+}
-+
-+bool CTVOSAppleMode::IsAvailable()
-+{
-+  return controller != nil;
-+}
-+
-+bool CTVOSAppleMode::IsWanted()
-+{
-+  return controller && wanted;
-+}
-+
-+void CTVOSAppleMode::SetWanted(bool value)
-+{
-+  wanted = value;
-+  dispatch_async(dispatch_get_main_queue(), ^{ Apply(); });
-+}
-+
-+bool CTVOSAppleMode::HandleBackFromKodi()
-+{
-+  if (!controller || wanted || !ready)
-+    return false;
-+  auto& windows = CServiceBroker::GetGUI()->GetWindowManager();
-+  const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
-+  if (windows.GetActiveWindow() != WINDOW_HOME || windows.HasVisibleModalDialog() ||
-+      player->IsPlaying())
-+    return false;
-+  SetWanted(true);
-+  return true;
-+}
-+
-+UIViewController* CTVOSAppleMode::Controller()
-+{
-+  return shown ? controller : nil;
-+}
 diff --git a/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h b/xbmc/platform/darwin/tvos/TVOSDexHubSetup.h
 new file mode 100644
 index 0000000..f80fb96
@@ -2074,28 +1881,6 @@ index 0000000..7fd023b
 +    }
 +  }
 +}
-diff --git a/xbmc/platform/darwin/tvos/TVOSEAGLView.mm b/xbmc/platform/darwin/tvos/TVOSEAGLView.mm
-index 0cbec10..53a6423 100644
---- a/xbmc/platform/darwin/tvos/TVOSEAGLView.mm
-+++ b/xbmc/platform/darwin/tvos/TVOSEAGLView.mm
-@@ -13,6 +13,7 @@
- #include "utils/log.h"
- 
- #import "platform/darwin/DarwinUtils.h"
-+#import "platform/darwin/tvos/TVOSAppleMode.h"
- #import "platform/darwin/tvos/XBMCController.h"
- 
- #import <signal.h>
-@@ -76,7 +77,8 @@ - (void)dealloc
- - (BOOL)canBecomeFocused
- {
-   // need this or we do not get GestureRecognizers under tvos.
--  return YES;
-+  // Not while the native Apple TV screens are shown: focus stays with them.
-+  return !CTVOSAppleMode::IsShown();
- }
- 
- - (void)setContext:(EAGLContext*)newContext
 diff --git a/xbmc/platform/darwin/tvos/TVOSExternalApp.h b/xbmc/platform/darwin/tvos/TVOSExternalApp.h
 new file mode 100644
 index 0000000..bd519ca
@@ -3028,6 +2813,368 @@ index 0000000..ffc40b9
 +  return visible && !floating;
 +  }
 +}
+diff --git a/xbmc/platform/darwin/tvos/TVOSTopShelf.h b/xbmc/platform/darwin/tvos/TVOSTopShelf.h
+index 9a38849..d833b0a 100644
+--- a/xbmc/platform/darwin/tvos/TVOSTopShelf.h
++++ b/xbmc/platform/darwin/tvos/TVOSTopShelf.h
+@@ -26,6 +26,11 @@ public:
+   void RunTopShelf();
+   void SetTopShelfItems(CFileItemList& items, TVOSTopShelfItemsCategory category);
+   void HandleTopShelfUrl(const std::string& url, const bool run);
++  // DexHub: rows an add-on hands over with the TopShelf.Set builtin (a JSON
++  // file: {"sections": [{"title", "items": [{"title", "image", "progress",
++  // "play", "display"}]}]}, play and display being Kodi builtins). They show
++  // above Kodi's own library rows. False when the file cannot be read.
++  bool SetDexHubShelf(const std::string& jsonPath);
+ 
+ private:
+   CTVOSTopShelf() = default;
+diff --git a/xbmc/platform/darwin/tvos/TVOSTopShelf.mm b/xbmc/platform/darwin/tvos/TVOSTopShelf.mm
+index 8f1eda2..f05a11c 100644
+--- a/xbmc/platform/darwin/tvos/TVOSTopShelf.mm
++++ b/xbmc/platform/darwin/tvos/TVOSTopShelf.mm
+@@ -14,6 +14,7 @@
+ #include "ServiceBroker.h"
+ #include "application/Application.h"
+ #include "filesystem/File.h"
++#include "filesystem/SpecialProtocol.h"
+ #include "guilib/GUIWindowManager.h"
+ #include "messaging/ApplicationMessenger.h"
+ #include "resources/LocalizeStrings.h"
+@@ -33,6 +34,7 @@
+ #include "platform/darwin/ios-common/DarwinEmbedUtils.h"
+ 
+ #import <Foundation/Foundation.h>
++#import <TVServices/TVServices.h>
+ #import <UIKit/UIKit.h>
+ #import <mach/mach_host.h>
+ #import <sys/sysctl.h>
+@@ -204,6 +206,91 @@
+   }
+ }
+ 
++namespace
++{
++// The actions behind the DexHub rows, by item id. Only these run: a
++// kodi://play/dexhub/<id> link names an item, never a command, so another
++// app cannot make Kodi run a builtin of its choosing.
++NSString* const DexHubActionsKey = @"DexHubTopShelfActions";
++}
++
++bool CTVOSTopShelf::SetDexHubShelf(const std::string& jsonPath)
++{
++  @autoreleasepool
++  {
++    NSData* data = [NSData dataWithContentsOfFile:@(CSpecialProtocol::TranslatePath(jsonPath).c_str())];
++    NSDictionary* shelf = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
++    if (![shelf isKindOfClass:NSDictionary.class] || ![shelf[@"sections"] isKindOfClass:NSArray.class])
++    {
++      CLog::Log(LOGWARNING, "[TopShelf] DexHub rows: unreadable {}", jsonPath);
++      return false;
++    }
++    NSURL* store = [[tvosShared getSharedURL] URLByAppendingPathComponent:@"DexHub" isDirectory:YES];
++    if (!store)
++    {
++      CLog::Log(LOGWARNING, "[TopShelf] no shared app group container: was the app signed with its app group?");
++      return false;
++    }
++    NSFileManager* files = NSFileManager.defaultManager;
++    [files createDirectoryAtURL:store withIntermediateDirectories:YES attributes:nil error:nil];
++    NSMutableSet* keep = [NSMutableSet set];
++    NSMutableDictionary* actions = [NSMutableDictionary dictionary];
++    NSMutableArray* sections = [NSMutableArray array];
++    for (NSDictionary* section in shelf[@"sections"])
++    {
++      if (![section isKindOfClass:NSDictionary.class] || ![section[@"items"] isKindOfClass:NSArray.class])
++        continue;
++      NSMutableArray* items = [NSMutableArray array];
++      for (NSDictionary* item in section[@"items"])
++      {
++        if (![item isKindOfClass:NSDictionary.class] || ![item[@"play"] isKindOfClass:NSString.class] ||
++            items.count >= 20)
++          continue;
++        NSString* play = item[@"play"];
++        NSString* display = [item[@"display"] isKindOfClass:NSString.class] ? item[@"display"] : play;
++        NSString* ident = [NSString stringWithFormat:@"%lx", (unsigned long)(play.hash ^ (display.hash << 1))];
++        actions[ident] = @{@"play" : play, @"display" : display};
++        NSMutableDictionary* row = [@{@"id" : ident, @"title" : item[@"title"] ?: @""} mutableCopy];
++        if ([item[@"progress"] isKindOfClass:NSNumber.class])
++          row[@"progress"] = item[@"progress"];
++        // Pictures on this device are copied next to the rows; web pictures
++        // are loaded by tvOS itself.
++        NSString* image = [item[@"image"] isKindOfClass:NSString.class] ? item[@"image"] : @"";
++        if ([image hasPrefix:@"http://"] || [image hasPrefix:@"https://"])
++          row[@"image"] = image;
++        else if (image.length)
++        {
++          const std::string source = CSpecialProtocol::TranslatePath(image.UTF8String);
++          NSString* name = [NSString stringWithFormat:@"%@.%@", ident,
++                                                      @(URIUtils::GetExtension(source).c_str()).length
++                                                          ? [@(URIUtils::GetExtension(source).c_str()) substringFromIndex:1]
++                                                          : @"jpg"];
++          NSURL* copy = [store URLByAppendingPathComponent:name];
++          if (![files fileExistsAtPath:copy.path])
++            [files copyItemAtPath:@(source.c_str()) toPath:copy.path error:nil];
++          [keep addObject:name];
++          row[@"file"] = name;
++        }
++        [items addObject:row];
++      }
++      if (items.count)
++        [sections addObject:@{@"title" : section[@"title"] ?: @"", @"items" : items}];
++    }
++    for (NSString* name in [files contentsOfDirectoryAtPath:store.path error:nil])
++      if (![keep containsObject:name] && ![name isEqualToString:@"shelf.json"])
++        [files removeItemAtURL:[store URLByAppendingPathComponent:name] error:nil];
++    NSData* out = [NSJSONSerialization dataWithJSONObject:@{@"sections" : sections} options:0 error:nil];
++    [out writeToURL:[store URLByAppendingPathComponent:@"shelf.json"] atomically:YES];
++    [NSUserDefaults.standardUserDefaults setObject:actions forKey:DexHubActionsKey];
++    // Ask tvOS to read the extension again (it caches the shelf otherwise).
++    dispatch_async(dispatch_get_main_queue(), ^{
++      [TVTopShelfContentProvider topShelfContentDidChange];
++    });
++    CLog::Log(LOGINFO, "[TopShelf] DexHub rows: {} section(s)", (int)sections.count);
++    return true;
++  }
++}
++
+ void CTVOSTopShelf::RunTopShelf()
+ {
+   if (!m_handleUrl)
+@@ -211,7 +298,22 @@
+ 
+   m_handleUrl = false;
+   std::vector<std::string> split = StringUtils::Split(m_url, "/");
+-  std::string url = Base64::Decode(split[4]);
++  if (split.size() < 5)
++    return;
++  if (split[3] == "dexhub")
++  {
++    NSDictionary* actions = [NSUserDefaults.standardUserDefaults dictionaryForKey:DexHubActionsKey];
++    NSDictionary* action = actions[@(split[4].c_str())];
++    NSString* builtin = action[split[2] == "display" ? @"display" : @"play"];
++    if ([builtin isKindOfClass:NSString.class])
++      CServiceBroker::GetAppMessenger()->PostMsg(TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr, builtin.UTF8String);
++    return;
++  }
++  // Base64 may hold '/', which the split cut apart.
++  std::string encoded = split[4];
++  for (size_t i = 5; i < split.size(); ++i)
++    encoded += "/" + split[i];
++  std::string url = Base64::Decode(encoded);
+ 
+   //!@Todo handle tvcontentitem.displayurl. Should show topshelf item video info
+   //  check split[2] for url type (display or play)
+diff --git a/xbmc/platform/darwin/tvos/TopShelf/Info.plist.in b/xbmc/platform/darwin/tvos/TopShelf/Info.plist.in
+index 016fe11..c630f79 100644
+--- a/xbmc/platform/darwin/tvos/TopShelf/Info.plist.in
++++ b/xbmc/platform/darwin/tvos/TopShelf/Info.plist.in
+@@ -24,15 +24,8 @@
+ 	<string>@APP_SCMID@</string>
+ 	<key>NSExtension</key>
+ 	<dict>
+-		<key>NSExtensionAttributes</key>
+-		<dict>
+-			<key>TVExtensionProtocols</key>
+-			<array>
+-				<string>TVTopShelfProvider</string>
+-			</array>
+-		</dict>
+ 		<key>NSExtensionPointIdentifier</key>
+-		<string>com.apple.tv-services</string>
++		<string>com.apple.tv-top-shelf</string>
+ 		<key>NSExtensionPrincipalClass</key>
+ 		<string>ServiceProvider</string>
+ 	</dict>
+diff --git a/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.h b/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.h
+index 016629b..7823301 100644
+--- a/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.h
++++ b/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.h
+@@ -21,5 +21,7 @@
+ #import <Foundation/Foundation.h>
+ #import <TVServices/TVServices.h>
+ 
+-@interface ServiceProvider : NSObject <TVTopShelfProvider>
++// DexHub: Apple's Top Shelf content provider (tvOS 13+). Rows handed over by
++// the app's TopShelf.Set builtin come first, then Kodi's own library rows.
++@interface ServiceProvider : TVTopShelfContentProvider
+ @end
+diff --git a/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.mm b/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.mm
+index 441aaa0..ded7ee2 100644
+--- a/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.mm
++++ b/xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.mm
+@@ -26,85 +26,106 @@
+ 
+ @implementation ServiceProvider
+ 
+-#pragma mark - TVTopShelfProvider protocol
+-
+-- (TVTopShelfContentStyle)topShelfStyle
++namespace
++{
++NSString* KodiScheme()
+ {
+-  return TVTopShelfContentStyleSectioned;
++  NSBundle* app = [tvosShared mainAppBundle];
++  for (NSDictionary* type in [app objectForInfoDictionaryKey:@"CFBundleURLTypes"])
++    if ([type[@"CFBundleURLName"] isEqualToString:app.bundleIdentifier])
++      return type[@"CFBundleURLSchemes"][0];
++  return @"kodi";
+ }
+ 
+-- (NSArray<TVContentItem*>*)topShelfItems
++TVTopShelfAction* Action(NSString* scheme, NSString* kind, NSString* group, NSString* ident)
+ {
+-  // Retrieve store URL
+-  static const auto storeUrl = [[tvosShared getSharedURL] URLByAppendingPathComponent:@"RA" isDirectory:YES];
+-
+-  // Retrieve TopShelf categories
+-  static const auto isSandboxed = CDarwinEmbedUtils::IsIosSandboxed();
+-  NSDictionary* topshelfCategories;
+-  if (isSandboxed)
+-  {
+-    auto sharedSandboxDict = [[NSUserDefaults alloc] initWithSuiteName:[tvosShared getSharedID]];
+-    topshelfCategories = [sharedSandboxDict objectForKey:@"topshelfCategories"];
+-  }
+-  else
+-  {
+-    static const auto sharedJailbreakUrl = [storeUrl URLByAppendingPathComponent:@"topshelf.dict"
+-                                                                     isDirectory:NO];
+-    topshelfCategories = [NSDictionary dictionaryWithContentsOfURL:sharedJailbreakUrl];
+-  }
++  NSURL* url = [NSURL URLWithString:[NSString stringWithFormat:@"%@://%@/%@/%@", scheme, kind, group, ident]];
++  return url ? [[TVTopShelfAction alloc] initWithURL:url] : nil;
++}
+ 
+-  // Retrieve Kodi URL Scheme
+-  static auto const mainAppBundle = [tvosShared mainAppBundle];
+-  auto kodiUrlScheme = @"kodi"; // fallback value
+-  for (NSDictionary* dic in [mainAppBundle objectForInfoDictionaryKey:@"CFBundleURLTypes"])
++// Rows from DexHub (Continue Watching): wide scenes with progress.
++NSArray<TVTopShelfItemCollection*>* DexHubSections(NSURL* shared, NSString* scheme)
++{
++  NSURL* store = [shared URLByAppendingPathComponent:@"DexHub" isDirectory:YES];
++  NSData* data = [NSData dataWithContentsOfURL:[store URLByAppendingPathComponent:@"shelf.json"]];
++  NSDictionary* shelf = data ? [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] : nil;
++  NSMutableArray* sections = [NSMutableArray array];
++  for (NSDictionary* section in shelf[@"sections"])
+   {
+-    if ([dic[@"CFBundleURLName"] isEqualToString:mainAppBundle.bundleIdentifier])
++    NSMutableArray* items = [NSMutableArray array];
++    for (NSDictionary* row in section[@"items"])
+     {
+-      kodiUrlScheme = dic[@"CFBundleURLSchemes"][0];
+-      break;
++      auto item = [[TVTopShelfSectionedItem alloc] initWithIdentifier:row[@"id"]];
++      item.title = row[@"title"];
++      item.imageShape = TVTopShelfSectionedItemImageShapeHDTV;
++      NSURL* image = row[@"file"] ? [store URLByAppendingPathComponent:row[@"file"]]
++                                  : (row[@"image"] ? [NSURL URLWithString:row[@"image"]] : nil);
++      if (image)
++        [item setImageURL:image
++                forTraits:TVTopShelfItemImageTraitScreenScale1x | TVTopShelfItemImageTraitScreenScale2x];
++      if ([row[@"progress"] isKindOfClass:NSNumber.class])
++        item.playbackProgress = MIN(1.0, MAX(0.0, [row[@"progress"] doubleValue]));
++      item.playAction = Action(scheme, @"play", @"dexhub", row[@"id"]);
++      item.displayAction = Action(scheme, @"display", @"dexhub", row[@"id"]);
++      [items addObject:item];
++    }
++    if (items.count)
++    {
++      auto collection = [[TVTopShelfItemCollection alloc] initWithItems:items];
++      collection.title = section[@"title"];
++      [sections addObject:collection];
+     }
+   }
++  return sections;
++}
+ 
+-  auto wrapperIdentifier = [[TVContentIdentifier alloc] initWithIdentifier:@"shelf-wrapper"
+-                                                                        container:nil];
+-
+-  // Function to create a TVContentItem array from an array of items (a category)
+-  auto contentItemsFrom = ^NSArray<TVContentItem*>*(NSString* categoryKey, NSArray* categoryItems)
+-  {
+-    NSMutableArray<TVContentItem*>* contentItems =
+-        [[NSMutableArray alloc] initWithCapacity:categoryItems.count];
+-    const auto thumbsPath = [storeUrl URLByAppendingPathComponent:categoryKey isDirectory:YES];
+-    for (NSDictionary* item in categoryItems)
++// Kodi's own library rows (recently added movies and episodes): posters.
++NSArray<TVTopShelfItemCollection*>* LibrarySections(NSURL* shared, NSString* scheme)
++{
++  NSURL* store = [shared URLByAppendingPathComponent:@"RA" isDirectory:YES];
++  NSDictionary* categories;
++  if (CDarwinEmbedUtils::IsIosSandboxed())
++    categories = [[[NSUserDefaults alloc] initWithSuiteName:[tvosShared getSharedID]] objectForKey:@"topshelfCategories"];
++  else
++    categories = [NSDictionary dictionaryWithContentsOfURL:[store URLByAppendingPathComponent:@"topshelf.dict"]];
++  NSMutableArray* sections = [NSMutableArray array];
++  [categories enumerateKeysAndObjectsUsingBlock:^(NSString* key, NSDictionary* category, BOOL*) {
++    NSURL* thumbs = [store URLByAppendingPathComponent:key isDirectory:YES];
++    NSMutableArray* items = [NSMutableArray array];
++    for (NSDictionary* row in category[@"categoryItems"])
+     {
+-      auto identifier = [[TVContentIdentifier alloc] initWithIdentifier:@"VOD"
+-                                                                     container:wrapperIdentifier];
+-      auto contentItem = [[TVContentItem alloc] initWithContentIdentifier:identifier];
+-
+-      [contentItem setImageURL:[thumbsPath URLByAppendingPathComponent:item[@"thumb"] isDirectory:NO]
+-                     forTraits:TVContentItemImageTraitScreenScale1x];
+-      contentItem.imageShape = TVContentItemImageShapePoster;
+-      contentItem.title = item[@"title"];
+-      NSString* url = item[@"url"];
+-      contentItem.displayURL = [NSURL
+-          URLWithString:[NSString stringWithFormat:@"%@://display/movie/%@", kodiUrlScheme, url]];
+-      contentItem.playURL = [NSURL
+-          URLWithString:[NSString stringWithFormat:@"%@://play/movie/%@", kodiUrlScheme, url]];
+-      [contentItems addObject:contentItem];
++      auto item = [[TVTopShelfSectionedItem alloc] initWithIdentifier:row[@"url"]];
++      item.title = row[@"title"];
++      item.imageShape = TVTopShelfSectionedItemImageShapePoster;
++      [item setImageURL:[thumbs URLByAppendingPathComponent:row[@"thumb"]]
++              forTraits:TVTopShelfItemImageTraitScreenScale1x | TVTopShelfItemImageTraitScreenScale2x];
++      item.playAction = Action(scheme, @"play", @"movie", row[@"url"]);
++      item.displayAction = Action(scheme, @"display", @"movie", row[@"url"]);
++      [items addObject:item];
++    }
++    if (items.count)
++    {
++      auto collection = [[TVTopShelfItemCollection alloc] initWithItems:items];
++      collection.title = category[@"categoryTitle"];
++      [sections addObject:collection];
+     }
+-    return contentItems;
+-  };
+-
+-  // Add each category to TopShelf
+-  auto topShelfItems = [[NSMutableArray alloc] init];
+-
+-  [topshelfCategories enumerateKeysAndObjectsUsingBlock:^(NSString* categoryKey, NSDictionary* categoryDict, BOOL *stop) {
+-    auto categoryContent = [[TVContentItem alloc] initWithContentIdentifier:wrapperIdentifier];
+-    categoryContent.title = categoryDict[@"categoryTitle"];
+-    categoryContent.topShelfItems = contentItemsFrom(categoryKey, categoryDict[@"categoryItems"]);
+-    [topShelfItems addObject:categoryContent];
+   }];
++  return sections;
++}
++} // namespace
+ 
+-  return topShelfItems;
++- (void)loadTopShelfContentWithCompletionHandler:(void (^)(id<TVTopShelfContent> _Nullable))completionHandler
++{
++  NSURL* shared = [tvosShared getSharedURL];
++  NSString* scheme = KodiScheme();
++  NSMutableArray* sections = [NSMutableArray array];
++  if (shared)
++  {
++    [sections addObjectsFromArray:DexHubSections(shared, scheme)];
++    [sections addObjectsFromArray:LibrarySections(shared, scheme)];
++  }
++  // Nothing to list: tvOS shows the app's static Top Shelf image instead.
++  completionHandler(sections.count ? [[TVTopShelfSectionedContent alloc] initWithSections:sections] : nil);
+ }
+ 
+ @end
 diff --git a/xbmc/platform/darwin/tvos/XBMCApplication.mm b/xbmc/platform/darwin/tvos/XBMCApplication.mm
 index f0d7152..e2d4f47 100644
 --- a/xbmc/platform/darwin/tvos/XBMCApplication.mm
@@ -3134,18 +3281,10 @@ index f0d7152..e2d4f47 100644
  {
    NSLog(@"We Got a Pipe Signal: %d____________", s);
 diff --git a/xbmc/platform/darwin/tvos/XBMCController.mm b/xbmc/platform/darwin/tvos/XBMCController.mm
-index 1c09a47..bd548c4 100644
+index 1c09a47..08671b2 100644
 --- a/xbmc/platform/darwin/tvos/XBMCController.mm
 +++ b/xbmc/platform/darwin/tvos/XBMCController.mm
-@@ -33,6 +33,7 @@
- 
- #import "platform/darwin/ios-common/AnnounceReceiver.h"
- #import "platform/darwin/ios-common/DarwinEmbedNowPlayingInfoManager.h"
-+#import "platform/darwin/tvos/TVOSAppleMode.h"
- #import "platform/darwin/tvos/TVOSDisplayManager.h"
- #import "platform/darwin/tvos/TVOSEAGLView.h"
- #import "platform/darwin/tvos/TVOSTopShelf.h"
-@@ -91,12 +92,20 @@ - (void)viewDidLoad
+@@ -91,7 +91,6 @@ - (void)viewDidLoad
    self.view.backgroundColor = UIColor.blackColor;
    [self.view addSubview:glView];
  
@@ -3153,21 +3292,7 @@ index 1c09a47..bd548c4 100644
    [inputHandler.inputTouch createPanGestureRecognizers];
    [inputHandler.inputTouch createPressGesturecognizers];
    [inputHandler.inputTouch createTapGesturecognizers];
- 
-   [displayManager addModeSwitchObserver];
-+  CTVOSAppleMode::Start();
-+}
-+
-+- (NSArray<id<UIFocusEnvironment>>*)preferredFocusEnvironments
-+{
-+  // The native Apple TV screens own focus while they are shown.
-+  if (UIViewController* apple = CTVOSAppleMode::Controller())
-+    return @[ apple ];
-+  return [super preferredFocusEnvironments];
- }
- 
- - (void)viewWillAppear:(BOOL)animated
-@@ -115,6 +124,7 @@ - (void)viewDidAppear:(BOOL)animated
+@@ -115,6 +114,7 @@ - (void)viewDidAppear:(BOOL)animated
  
  - (void)viewWillDisappear:(BOOL)animated
  {
@@ -3341,10 +3466,10 @@ index 6f4cb16..23aa492 100644
  - (void)createPressGesturecognizers;
  - (void)menuPressed:(UITapGestureRecognizer*)sender;
 diff --git a/xbmc/platform/darwin/tvos/input/LibInputTouch.mm b/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
-index 1a86773..4dc7c5b 100644
+index 1a86773..3ced3c1 100644
 --- a/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
 +++ b/xbmc/platform/darwin/tvos/input/LibInputTouch.mm
-@@ -12,9 +12,11 @@
+@@ -12,6 +12,7 @@
  #include "application/ApplicationComponents.h"
  #include "application/ApplicationPlayer.h"
  #include "guilib/GUIComponent.h"
@@ -3352,11 +3477,7 @@ index 1a86773..4dc7c5b 100644
  #include "guilib/GUIWindowManager.h"
  #include "utils/log.h"
  
-+#import "platform/darwin/tvos/TVOSAppleMode.h"
- #import "platform/darwin/tvos/TVOSEAGLView.h"
- #import "platform/darwin/tvos/XBMCController.h"
- #import "platform/darwin/tvos/input/LibInputHandler.h"
-@@ -65,14 +67,19 @@ - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldReceiveP
+@@ -65,14 +66,16 @@ - (BOOL)gestureRecognizer:(UIGestureRecognizer*)gestureRecognizer shouldReceiveP
      // single press key, but also detect hold and back to tvos.
      case UIPressTypeMenu:
      {
@@ -3373,16 +3494,13 @@ index 1a86773..4dc7c5b 100644
 -          !appPlayer->IsPlaying())
 +      auto& windowManager = CServiceBroker::GetGUI()->GetWindowManager();
 +      const CGUIWindow* home = windowManager.GetWindow(WINDOW_HOME);
-+      // With the native Apple TV screens, Back on Kodi's Home returns to them
-+      // instead (menuPressed), and Back on their top level leaves the app.
 +      if (windowManager.GetActiveWindow() == WINDOW_HOME &&
 +          !windowManager.HasVisibleModalDialog() && !appPlayer->IsPlaying() &&
-+          !(home && home->GetProperty("dexhub.keepback").asBoolean()) &&
-+          !CTVOSAppleMode::IsAvailable())
++          !(home && home->GetProperty("dexhub.keepback").asBoolean()))
          handled = NO;
        break;
      }
-@@ -118,6 +125,11 @@ - (void)createPanGestureRecognizers
+@@ -118,6 +121,11 @@ - (void)createPanGestureRecognizers
    // for pan gestures with one finger
    auto pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
    pan.delegate = self;
@@ -3394,16 +3512,7 @@ index 1a86773..4dc7c5b 100644
    [g_xbmcController.glView addGestureRecognizer:pan];
  }
  
-@@ -239,6 +251,8 @@ - (void)menuPressed:(UITapGestureRecognizer*)sender
-   switch (sender.state)
-   {
-     case UIGestureRecognizerStateEnded:
-+      if (CTVOSAppleMode::HandleBackFromKodi())
-+        break;
-       CLog::Log(LOGDEBUG, "Input: Siri remote menu press (id: 6)");
-       [g_xbmcController.inputHandler sendButtonPressed:6];
-       [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -372,6 +386,8 @@ - (IBAction)IRRemoteUpArrowPressed:(UIGestureRecognizer*)sender
+@@ -372,6 +380,8 @@ - (IBAction)IRRemoteUpArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3412,7 +3521,7 @@ index 1a86773..4dc7c5b 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -391,6 +407,8 @@ - (IBAction)IRRemoteDownArrowPressed:(UIGestureRecognizer*)sender
+@@ -391,6 +401,8 @@ - (IBAction)IRRemoteDownArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3421,7 +3530,7 @@ index 1a86773..4dc7c5b 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -410,6 +428,8 @@ - (IBAction)IRRemoteLeftArrowPressed:(UIGestureRecognizer*)sender
+@@ -410,6 +422,8 @@ - (IBAction)IRRemoteLeftArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3430,7 +3539,7 @@ index 1a86773..4dc7c5b 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -429,6 +449,8 @@ - (IBAction)IRRemoteRightArrowPressed:(UIGestureRecognizer*)sender
+@@ -429,6 +443,8 @@ - (IBAction)IRRemoteRightArrowPressed:(UIGestureRecognizer*)sender
        break;
      case UIGestureRecognizerStateChanged:
        break;
@@ -3439,7 +3548,7 @@ index 1a86773..4dc7c5b 100644
      case UIGestureRecognizerStateEnded:
        [g_xbmcController.inputHandler.inputRemote stopKeyPressTimer];
        [g_xbmcController.inputHandler.inputRemote startSiriRemoteIdleTimer];
-@@ -480,85 +502,79 @@ - (IBAction)tapRightArrowPressed:(UIGestureRecognizer*)sender
+@@ -480,85 +496,79 @@ - (IBAction)tapRightArrowPressed:(UIGestureRecognizer*)sender
  
  - (IBAction)handlePan:(UIPanGestureRecognizer*)sender
  {

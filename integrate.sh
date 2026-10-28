@@ -50,9 +50,6 @@ ditto "$FRAMEWORK" "$APP/Frameworks/DexAetherBridge.framework"
 # Swift remote navigation, loaded at run time by LibInputTouch.mm (built-in
 # gesture handling is used when it is missing). Prebuilt; see vendor/README.md.
 ditto "$BASE/vendor/DexNavigationKit.framework" "$APP/Frameworks/DexNavigationKit.framework"
-# Native Apple TV screens over Kodi (apple-ui/); Kodi alone opens without them.
-DEX_WORK="$WORK" bash "$BASE/apple-ui/build.sh"
-ditto "$WORK/apple-ui-build/Build/Products/Release-appletvos/DexAppleUI.framework" "$APP/Frameworks/DexAppleUI.framework"
 # v21.36: Aether's resource bundle. AetherEngine 7.38 loads silent-atmos.mp4
 # from Bundle.module (AetherEngine_AetherEngine.bundle) when Atmos or DTS:X
 # plays as APAC; Xcode leaves the bundle beside the framework, not inside the

@@ -4,7 +4,7 @@ import xbmc
 import xbmcvfs
 
 def install(force=False):
-    marker='special://profile/addon_data/script.dexhub.tvos.players/ui-quality-v1.done'
+    marker='special://profile/addon_data/script.dexhub.tvos.players/ui-quality-v2.done'
     if not force and xbmcvfs.exists(marker):return False
     path='special://profile/advancedsettings.xml'
     raw=''
@@ -14,7 +14,7 @@ def install(force=False):
         finally:f.close()
     root=ET.fromstring(raw) if raw.strip() else ET.Element('advancedsettings')
     if root.tag!='advancedsettings':raise ValueError('Invalid advancedsettings.xml; left unchanged')
-    for tag,value in [('imageres',1080),('fanartres',2160)]:
+    for tag,value in [('imageres',1440),('fanartres',2160)]:
         element=root.find(tag)
         if element is None:element=ET.SubElement(root,tag)
         try:current=int(element.text or 0)
@@ -32,5 +32,5 @@ def install(force=False):
     f=xbmcvfs.File(marker,'w')
     try:f.write('1')
     finally:f.close()
-    xbmc.log('DexHub: artwork cache limits set to 1080/2160; applied at next Kodi launch',xbmc.LOGINFO)
+    xbmc.log('DexHub: artwork cache minimums set to 1440/2160; applied at next Kodi launch',xbmc.LOGINFO)
     return True

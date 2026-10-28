@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<addon id="script.dexhub.tvos.players" version="1.0.15" name="DexHub Apple TV Players" provider-name="DexWorld">
+<addon id="script.dexhub.tvos.players" version="1.0.16" name="DexHub Apple TV Players" provider-name="DexWorld">
 <requires><import addon="xbmc.python" version="3.0.0"/><import addon="plugin.video.dexhub.tvos" version="5.10.273"/></requires>
 <extension point="xbmc.python.script" library="default.py"/>
 <extension point="xbmc.service" library="service.py"/>
-<extension point="xbmc.addon.metadata"><summary lang="en_GB">Choose or switch tvOS players</summary><description lang="en_GB">Player controls for DexHub tvOS.</description><platform>all</platform><license>GPL-2.0-or-later</license></extension></addon>
+<extension point="xbmc.addon.metadata"><summary lang="en_GB">Choose or switch tvOS players; Continue Watching on the Top Shelf</summary><description lang="en_GB">Player controls for DexHub tvOS.</description><platform>all</platform><license>GPL-2.0-or-later</license></extension></addon>

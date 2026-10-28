@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Make a new IPA from a released one plus a fresh Kodi and Aether bridge build.
 
-Usage: repackage_release.py BASE_IPA KODI_APP BRIDGE_PRODUCTS OUTPUT_FOLDER [APPLE_UI_FRAMEWORK]
+Usage: repackage_release.py BASE_IPA KODI_APP BRIDGE_PRODUCTS OUTPUT_FOLDER [ADDONS]
 
 BASE_IPA         a released DexHub IPA; its bundled add-ons, fonts, licences and
                  Python compatibility files are kept as they are
 KODI_APP         Kodi.app from integrate.sh's xcodebuild (Release-appletvos)
 BRIDGE_PRODUCTS  Release-appletvos folder of the DexAetherBridge build
-APPLE_UI_FRAMEWORK  DexAppleUI.framework (apple-ui/build.sh): the native Apple TV
-                 screens; without it the app opens in Kodi as before
+ADDONS           a folder of add-on folders (plugin.video.dexhub.tvos, skin.dexhub.tvos,
+                 script.dexhub.tvos.players...) that replace the released copies whole
 
 Every file Kodi's build produces replaces the released copy (binary, asset
 catalogue, splash, system files, top shelf extension), except the add-ons
@@ -17,6 +17,7 @@ bridge build, signed ad hoc for re-signing as normalize_frameworks.sh does.
 """
 import json
 import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -26,7 +27,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 base_ipa, kodi_app, products, output = map(Path, sys.argv[1:5])
-apple_ui = Path(sys.argv[5]) if len(sys.argv) > 5 else None
+addons = Path(sys.argv[5]) if len(sys.argv) > 5 else None
+updates = {}
+for folder in sorted(addons.iterdir()) if addons else []:
+    descriptor = folder / 'addon.xml'
+    if descriptor.is_file():
+        version = re.search(r'<addon\b[^>]*\sversion="([^"]+)"', descriptor.read_text(encoding='utf-8'))
+        updates[folder.name] = (folder, version.group(1) if version else '')
 repo = Path(__file__).resolve().parent
 release = json.loads((repo / 'ENGINE-RELEASE.json').read_text())
 APP = 'Payload/Kodi.app/'
@@ -44,10 +51,6 @@ with tempfile.TemporaryDirectory(dir=output) as temporary:
             shutil.copytree(framework, frameworks / framework.name, symlinks=True, dirs_exist_ok=True)
     shutil.copytree(repo / 'vendor/DexNavigationKit.framework', frameworks / 'DexNavigationKit.framework',
                     dirs_exist_ok=True)
-    if apple_ui:
-        if not (apple_ui / 'DexAppleUI').is_file():
-            raise SystemExit('DexAppleUI.framework missing: ' + str(apple_ui))
-        shutil.copytree(apple_ui, frameworks / 'DexAppleUI.framework', symlinks=True, dirs_exist_ok=True)
     resources = products / 'AetherEngine_AetherEngine.bundle'
     if not (resources / 'silent-atmos.mp4').is_file():
         raise SystemExit('Aether resource bundle missing from the bridge build')
@@ -82,8 +85,14 @@ with tempfile.TemporaryDirectory(dir=output) as temporary:
         managed = tuple(ADDONS + item['id'] + '/' for item in manifest['addons'])
         built = {APP + path.relative_to(stage).as_posix(): path for path in stage.rglob('*') if path.is_file()}
         replace = {name: path for name, path in built.items() if not name.startswith(managed)}
+        # Updated add-ons replace their released copies whole.
+        for identifier, (folder, version) in updates.items():
+            for path in folder.rglob('*'):
+                if path.is_file() and '__pycache__' not in path.parts and path.suffix != '.pyc' and path.name != '.DS_Store':
+                    replace[ADDONS + identifier + '/' + path.relative_to(folder).as_posix()] = path
         # Old engine bundles and frameworks go; the new set replaces them whole.
-        drop = (APP + '_CodeSignature/', APP + 'Frameworks/', APP + 'PlugIns/', APP + 'AetherEngine_AetherEngine.bundle/')
+        drop = (APP + '_CodeSignature/', APP + 'Frameworks/', APP + 'PlugIns/', APP + 'AetherEngine_AetherEngine.bundle/',
+                *(ADDONS + identifier + '/' for identifier in updates))
 
         plist = plistlib.loads((stage / 'Info.plist').read_bytes())
         released = plistlib.loads(base.read(APP + 'Info.plist'))
@@ -94,6 +103,10 @@ with tempfile.TemporaryDirectory(dir=output) as temporary:
         plist.update(DexHubBuildVersion=release['app_version'], DexHubAetherVersion=release['version'],
                      CFBundleVersion=now.strftime('%y%m%d%H%M'))
         manifest.update(app_version=release['app_version'], engine=release['version'])
+        listed = {item['id']: item for item in manifest['addons']}
+        for identifier, (folder, version) in updates.items():
+            listed.setdefault(identifier, {'id': identifier})['version'] = version
+        manifest['addons'] = sorted(listed.values(), key=lambda item: item['id'])
         details = {'app_version': release['app_version'], 'engine': release['version'],
                    'engine_commit': release['commit'], 'bridge_revision': release['bridge_revision'],
                    'dependencies': release['dependencies'], 'traits': release['traits'],

@@ -50,3 +50,9 @@ if xbmc.getCondVisibility('System.Platform.TVOS'):
             if not xbmc.getCondVisibility('Player.HasVideo'):
                 xbmc.executebuiltin('UpdateAddonRepos')
                 break
+        # Dex Hub's Continue Watching on the Apple TV Top Shelf, for as long as Kodi runs.
+        try:
+            from topshelf import run as run_topshelf
+            run_topshelf(monitor)
+        except Exception:
+            xbmc.log('DexHub Top Shelf: feeder stopped', xbmc.LOGWARNING)

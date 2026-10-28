@@ -49,11 +49,12 @@ touch=(source/'xbmc/platform/darwin/tvos/input/LibInputTouch.mm').read_text()
 menu=touch.split('case UIPressTypeMenu:',1)[1].split('break;',1)[0]
 assert 'WINDOW_HOME' in menu and 'handled = NO;' in menu and '"dexhub.keepback"' in menu
 assert 'request[@"nowPlaying"] = nowPlaying;' in native and 'm_callback.OnPlayBackPaused();' in native
-# v21.70: native Apple TV screens over Kodi, Back from Kodi's Home, DexHub.AppleMode.
-apple=(source/'xbmc/platform/darwin/tvos/TVOSAppleMode.mm').read_text()
-assert 'JSONRPC::CJSONRPC::MethodCall' in apple and 'DexAppleUI.framework' in apple
-assert 'CTVOSAppleMode::HandleBackFromKodi()' in touch and 'CTVOSAppleMode::Start();' in (source/'xbmc/platform/darwin/tvos/XBMCController.mm').read_text()
-assert '"dexhub.applemode"' in (source/'xbmc/interfaces/builtins/SystemBuiltins.cpp').read_text()
+# 22.2: Kodi only (no native Apple screens); Top Shelf rows from Dex Hub.
+assert not (source/'xbmc/platform/darwin/tvos/TVOSAppleMode.mm').exists()
+assert '"topshelf.set"' in (source/'xbmc/interfaces/builtins/SystemBuiltins.cpp').read_text()
+shelf=(source/'xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.mm').read_text()
+assert 'TVTopShelfSectionedContent' in shelf and 'playbackProgress' in shelf
+assert 'com.apple.tv-top-shelf' in (source/'xbmc/platform/darwin/tvos/TopShelf/Info.plist.in').read_text()
 subprocess.run(['git','-C',str(source),'apply','--reverse',str(base/'native/kodi-22.0rc1-dexhub.patch')],check=True)
 assert subprocess.run(['git','-C',str(source),'diff'],capture_output=True,check=True).stdout==before_diff
 print('PASS: RC1 patch apply/idempotency/reverse; setup before addon scan/services; routing; Back; Now Playing')

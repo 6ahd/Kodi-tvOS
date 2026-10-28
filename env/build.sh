@@ -7,7 +7,9 @@
 # The environment (default /Volumes/Backup/DexHub-Env) holds:
 #   depends/    Kodi's prebuilt tvOS dependencies and native tools
 #   kodi-src/   a clean Kodi 22.0rc1-Piers checkout (the patch is applied here)
-#   base/       the released IPA whose add-ons and fonts are carried over
+#   base/       the released IPA whose other add-ons and fonts are carried over
+#   addons/     the Apple TV Dex Hub add-on and skin (tvos/) and the General
+#               zips they match (general/); refreshed from Kodi-General
 #   build/      every build product and cache (Kodi, Aether bridge, Apple UI)
 #   releases/   finished unsigned IPAs, one folder per version
 # Nothing is written to the system disk: temporary files and compiler caches
@@ -15,6 +17,7 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 ENV_DIR="${DEX_ENV:-/Volumes/Backup/DexHub-Env}"
+GENERAL="${DEX_GENERAL:-/Volumes/Backup/DexHub-v21.61/Kodi-General}"
 NATIVE="$ENV_DIR/depends/aarch64-darwin25.6.0-native"
 BUILD="$ENV_DIR/build"
 KODI_SRC="$ENV_DIR/kodi-src"
@@ -68,18 +71,22 @@ xcodebuild -project "$REPO/DexAetherBridge.xcodeproj" -scheme DexAetherBridge -c
 BRIDGE_PRODUCTS="$BUILD/bridge/Build/Products/Release-appletvos"
 nm -gU "$BRIDGE_PRODUCTS/DexAetherBridge.framework/DexAetherBridge" | grep -q snapshotForToken
 
-step "Native Apple TV screens"
-DEX_WORK="$BUILD" bash "$REPO/apple-ui/build.sh" >/dev/null
-APPLE_UI="$BUILD/apple-ui-build/Build/Products/Release-appletvos/DexAppleUI.framework"
-test -s "$APPLE_UI/DexAppleUI"
+step "Dex Hub add-on and skin from General"
+# Every build starts from the newest general release (the General folder is
+# where new versions land); its changes are merged into the Apple TV copies.
+"$PYTHON" "$REPO/tools/sync_from_general.py" "$GENERAL" "$ENV_DIR/addons"
+ADDONS="$BUILD/addons"
+rm -rf "$ADDONS" && mkdir -p "$ADDONS"
+cp -R "$ENV_DIR"/addons/tvos/* "$ADDONS/"
+cp -R "$REPO/script.dexhub.tvos.players" "$ADDONS/"
 
 step "Package"
 VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["app_version"])' "$REPO/ENGINE-RELEASE.json")"
 OUT="$ENV_DIR/releases/v$VERSION"
 mkdir -p "$OUT"
-"$PYTHON" "$REPO/repackage_release.py" "$BASE_IPA" "$KODI_APP" "$BRIDGE_PRODUCTS" "$OUT" "$APPLE_UI" | tail -1
+"$PYTHON" "$REPO/repackage_release.py" "$BASE_IPA" "$KODI_APP" "$BRIDGE_PRODUCTS" "$OUT" "$ADDONS" | tail -1
 IPA="$(ls -t "$OUT"/*.ipa | head -1)"
-"$PYTHON" "$REPO/env/verify_ipa.py" "$IPA" "$BASE_IPA"
+"$PYTHON" "$REPO/env/verify_ipa.py" "$IPA" "$BASE_IPA" "$ADDONS"
 (cd "$OUT" && shasum -a 256 "$(basename "$IPA")" > SHA256SUMS.txt)
 echo
 echo "$IPA"

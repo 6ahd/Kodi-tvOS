@@ -1,0 +1,49 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  D0000000000000000000000D = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Components.swift; sourceTree = SOURCE_ROOT;};
+  D0000000000000000000000E = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/DexAppleUI.swift; sourceTree = SOURCE_ROOT;};
+  D0000000000000000000000F = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Images.swift; sourceTree = SOURCE_ROOT;};
+  D00000000000000000000010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Kodi.swift; sourceTree = SOURCE_ROOT;};
+  D00000000000000000000011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Screens.swift; sourceTree = SOURCE_ROOT;};
+  D00000000000000000000012 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Streams.swift; sourceTree = SOURCE_ROOT;};
+  D00000000000000000000013 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preview/PreviewApp.swift; sourceTree = SOURCE_ROOT;};
+  D00000000000000000000014 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = appletvos; SUPPORTED_PLATFORMS = "appletvos appletvsimulator"; TARGETED_DEVICE_FAMILY = 3; TVOS_DEPLOYMENT_TARGET = 26.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; ALWAYS_SEARCH_USER_PATHS = NO; MARKETING_VERSION = 1.0;}; name = Debug;};
+  D00000000000000000000015 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = appletvos; SUPPORTED_PLATFORMS = "appletvos appletvsimulator"; TARGETED_DEVICE_FAMILY = 3; TVOS_DEPLOYMENT_TARGET = 26.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; ALWAYS_SEARCH_USER_PATHS = NO; MARKETING_VERSION = 1.0;}; name = Release;};
+  D0000000000000000000000A = {isa = XCConfigurationList; buildConfigurations = (D00000000000000000000014, D00000000000000000000015); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  D00000000000000000000016 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = appletvos; SUPPORTED_PLATFORMS = "appletvos appletvsimulator"; TARGETED_DEVICE_FAMILY = 3; TVOS_DEPLOYMENT_TARGET = 26.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; ALWAYS_SEARCH_USER_PATHS = NO; MARKETING_VERSION = 1.0; PRODUCT_NAME = DexAppleUI; PRODUCT_BUNDLE_IDENTIFIER = cc.dexworld.DexAppleUI; DEFINES_MODULE = YES; MACH_O_TYPE = mh_dylib; SKIP_INSTALL = NO; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks");}; name = Debug;};
+  D00000000000000000000017 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = appletvos; SUPPORTED_PLATFORMS = "appletvos appletvsimulator"; TARGETED_DEVICE_FAMILY = 3; TVOS_DEPLOYMENT_TARGET = 26.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; ALWAYS_SEARCH_USER_PATHS = NO; MARKETING_VERSION = 1.0; PRODUCT_NAME = DexAppleUI; PRODUCT_BUNDLE_IDENTIFIER = cc.dexworld.DexAppleUI; DEFINES_MODULE = YES; MACH_O_TYPE = mh_dylib; SKIP_INSTALL = NO; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks");}; name = Release;};
+  D0000000000000000000000B = {isa = XCConfigurationList; buildConfigurations = (D00000000000000000000016, D00000000000000000000017); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  D00000000000000000000018 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = appletvos; SUPPORTED_PLATFORMS = "appletvos appletvsimulator"; TARGETED_DEVICE_FAMILY = 3; TVOS_DEPLOYMENT_TARGET = 26.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; ALWAYS_SEARCH_USER_PATHS = NO; MARKETING_VERSION = 1.0; PRODUCT_NAME = DexAppleUIPreview; PRODUCT_BUNDLE_IDENTIFIER = cc.dexworld.DexAppleUIPreview; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_CFBundleDisplayName = "Dex Hub Preview"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks");}; name = Debug;};
+  D00000000000000000000019 = {isa = XCBuildConfiguration; buildSettings = {SDKROOT = appletvos; SUPPORTED_PLATFORMS = "appletvos appletvsimulator"; TARGETED_DEVICE_FAMILY = 3; TVOS_DEPLOYMENT_TARGET = 26.0; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-O"; GENERATE_INFOPLIST_FILE = YES; CODE_SIGNING_ALLOWED = NO; CODE_SIGNING_REQUIRED = NO; CURRENT_PROJECT_VERSION = 1; ALWAYS_SEARCH_USER_PATHS = NO; MARKETING_VERSION = 1.0; PRODUCT_NAME = DexAppleUIPreview; PRODUCT_BUNDLE_IDENTIFIER = cc.dexworld.DexAppleUIPreview; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_CFBundleDisplayName = "Dex Hub Preview"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks");}; name = Release;};
+  D0000000000000000000000C = {isa = XCConfigurationList; buildConfigurations = (D00000000000000000000018, D00000000000000000000019); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release;};
+  D0000000000000000000001B = {isa = PBXBuildFile; fileRef = D0000000000000000000000D;};
+  D0000000000000000000001C = {isa = PBXBuildFile; fileRef = D0000000000000000000000E;};
+  D0000000000000000000001D = {isa = PBXBuildFile; fileRef = D0000000000000000000000F;};
+  D0000000000000000000001E = {isa = PBXBuildFile; fileRef = D00000000000000000000010;};
+  D0000000000000000000001F = {isa = PBXBuildFile; fileRef = D00000000000000000000011;};
+  D00000000000000000000020 = {isa = PBXBuildFile; fileRef = D00000000000000000000012;};
+  D0000000000000000000001A = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (D0000000000000000000001B, D0000000000000000000001C, D0000000000000000000001D, D0000000000000000000001E, D0000000000000000000001F, D00000000000000000000020); runOnlyForDeploymentPostprocessing = 0;};
+  D00000000000000000000022 = {isa = PBXBuildFile; fileRef = D0000000000000000000000D;};
+  D00000000000000000000023 = {isa = PBXBuildFile; fileRef = D0000000000000000000000E;};
+  D00000000000000000000024 = {isa = PBXBuildFile; fileRef = D0000000000000000000000F;};
+  D00000000000000000000025 = {isa = PBXBuildFile; fileRef = D00000000000000000000010;};
+  D00000000000000000000026 = {isa = PBXBuildFile; fileRef = D00000000000000000000011;};
+  D00000000000000000000027 = {isa = PBXBuildFile; fileRef = D00000000000000000000012;};
+  D00000000000000000000028 = {isa = PBXBuildFile; fileRef = D00000000000000000000013;};
+  D00000000000000000000021 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (D00000000000000000000022, D00000000000000000000023, D00000000000000000000024, D00000000000000000000025, D00000000000000000000026, D00000000000000000000027, D00000000000000000000028); runOnlyForDeploymentPostprocessing = 0;};
+  D00000000000000000000008 = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = DexAppleUI.framework; sourceTree = BUILT_PRODUCTS_DIR;};
+  D00000000000000000000009 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DexAppleUIPreview.app; sourceTree = BUILT_PRODUCTS_DIR;};
+  D00000000000000000000006 = {isa = PBXNativeTarget; buildConfigurationList = D0000000000000000000000B; buildPhases = (D0000000000000000000001A); buildRules = (); dependencies = (); name = DexAppleUI; productName = DexAppleUI; productReference = D00000000000000000000008; productType = "com.apple.product-type.framework";};
+  D00000000000000000000007 = {isa = PBXNativeTarget; buildConfigurationList = D0000000000000000000000C; buildPhases = (D00000000000000000000021); buildRules = (); dependencies = (); name = DexAppleUIPreview; productName = DexAppleUIPreview; productReference = D00000000000000000000009; productType = "com.apple.product-type.application";};
+  D00000000000000000000004 = {isa = PBXGroup; children = (D0000000000000000000000D, D0000000000000000000000E, D0000000000000000000000F, D00000000000000000000010, D00000000000000000000011, D00000000000000000000012); name = Sources; sourceTree = "<group>";};
+  D00000000000000000000005 = {isa = PBXGroup; children = (D00000000000000000000013); name = Preview; sourceTree = "<group>";};
+  D00000000000000000000003 = {isa = PBXGroup; children = (D00000000000000000000008, D00000000000000000000009); name = Products; sourceTree = "<group>";};
+  D00000000000000000000002 = {isa = PBXGroup; children = (D00000000000000000000004, D00000000000000000000005, D00000000000000000000003); sourceTree = "<group>";};
+  D00000000000000000000001 = {isa = PBXProject; attributes = {LastUpgradeCheck = 2700;}; buildConfigurationList = D0000000000000000000000A; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, ar, Base); mainGroup = D00000000000000000000002; productRefGroup = D00000000000000000000003; projectDirPath = ""; projectRoot = ""; targets = (D00000000000000000000006, D00000000000000000000007);};
+ };
+ rootObject = D00000000000000000000001;
+}
