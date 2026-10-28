@@ -171,6 +171,35 @@ index ba0c047..25a4073 100644
    m_repositoryUpdater = std::make_unique<ADDON::CRepositoryUpdater>(*m_addonMgr);
  
    m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
+diff --git a/xbmc/addons/Skin.cpp b/xbmc/addons/Skin.cpp
+index 03875e2..857dfe2 100644
+--- a/xbmc/addons/Skin.cpp
++++ b/xbmc/addons/Skin.cpp
+@@ -544,10 +544,21 @@ void GetFontsetsFromFile(const std::string& fontsetFilePath,
+         const char* idLocAttr = fontsetElement->Attribute("idloc");
+         if (idAttr)
+         {
++          // DexHub: a skin may number its font names outside 31000-31999 (the
++          // Dex Hub skin uses 32200+). Kodi then looked them up in its own
++          // strings and listed blank names: read the skin's strings first and
++          // fall back to the fontset id, which is readable.
++          std::string label;
+           if (idLocAttr)
+-            list.emplace_back(CGUIUtils::GetLocalizedString(std::atoi(idLocAttr)), idAttr);
+-          else
+-            list.emplace_back(idAttr, idAttr);
++          {
++            const uint32_t id = static_cast<uint32_t>(std::atoi(idLocAttr));
++            if (skin)
++              label = CServiceBroker::GetResourcesComponent().GetLocalizeStrings().GetAddonString(
++                  skin->ID(), id);
++            if (label.empty())
++              label = CGUIUtils::GetLocalizedString(id);
++          }
++          list.emplace_back(label.empty() ? std::string(idAttr) : label, idAttr);
+ 
+           if (StringUtils::EqualsNoCase(idAttr, settingValue))
+             *currentValueSet = true;
 diff --git a/xbmc/application/Application.cpp b/xbmc/application/Application.cpp
 index 7362719..547f9e6 100644
 --- a/xbmc/application/Application.cpp
