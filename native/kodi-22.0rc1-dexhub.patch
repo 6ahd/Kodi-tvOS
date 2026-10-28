@@ -1590,10 +1590,10 @@ index 0000000..0251c43
 +};
 diff --git a/xbmc/platform/darwin/tvos/TVOSAppleMode.mm b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
 new file mode 100644
-index 0000000..64baa54
+index 0000000..8b938d1
 --- /dev/null
 +++ b/xbmc/platform/darwin/tvos/TVOSAppleMode.mm
-@@ -0,0 +1,172 @@
+@@ -0,0 +1,178 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "TVOSAppleMode.h"
 +
@@ -1607,6 +1607,7 @@ index 0000000..64baa54
 +#include "interfaces/json-rpc/JSONRPC.h"
 +#include "interfaces/legacy/aojsonrpc.h"
 +#include "utils/log.h"
++#include "windowing/WinSystem.h"
 +
 +#import "platform/darwin/tvos/TVOSEAGLView.h"
 +#import "platform/darwin/tvos/XBMCController.h"
@@ -1666,17 +1667,21 @@ index 0000000..64baa54
 +  while (true)
 +  {
 +    std::this_thread::sleep_for(std::chrono::milliseconds(200));
++    // Dialog queries lock Kodi's graphics context: wait for its window system
++    // and an initialised window manager.
 +    auto* gui = CServiceBroker::GetGUI();
-+    if (!gui)
++    if (!gui || !CServiceBroker::GetWinSystem() || !gui->GetWindowManager().Initialized())
 +      continue;
 +    auto& windows = gui->GetWindowManager();
 +    const bool home = windows.GetActiveWindow() == WINDOW_HOME;
 +    const int dialog = windows.GetTopmostModalDialog(true);
 +    const bool modal = dialog != WINDOW_INVALID && dialog != WINDOW_DIALOG_BUSY &&
 +                       dialog != WINDOW_DIALOG_BUSY_NOCANCEL;
++    const bool becameReady = home && !ready.exchange(true);
++    if (!ready)
++      continue; // nothing else of Kodi's is asked before its Home window is up
 +    const auto player = CServiceBroker::GetAppComponents().GetComponent<CApplicationPlayer>();
 +    const bool needed = modal || (player && player->IsPlaying());
-+    const bool becameReady = home && !ready.exchange(true);
 +    if (becameReady)
 +    {
 +      // Where Dex Hub keeps its source add-ons (providers.json), for the
@@ -1700,14 +1705,15 @@ index 0000000..64baa54
 +  NSError* error = nil;
 +  if (![[NSBundle bundleWithPath:path] loadAndReturnError:&error])
 +  {
-+    CLog::Log(LOGINFO, "DexHub Apple mode unavailable: {}",
-+              error.localizedDescription.UTF8String ?: "no DexAppleUI.framework");
++    // Start() runs in viewDidLoad, before Kodi's logger exists: CLog here
++    // crashed v22.0 at launch. The system log works at any time.
++    NSLog(@"DexHub Apple mode unavailable: %@", error.localizedDescription ?: @"no DexAppleUI.framework");
 +    return;
 +  }
 +  Class module = NSClassFromString(@"DexAppleUI");
 +  if (![module respondsToSelector:@selector(makeRootWithRPC:command:)])
 +  {
-+    CLog::Log(LOGWARNING, "DexHub Apple mode: DexAppleUI has no entry point");
++    NSLog(@"DexHub Apple mode: DexAppleUI has no entry point");
 +    return;
 +  }
 +  controller = [module makeRootWithRPC:^(NSString* request, void (^done)(NSString*)) {
@@ -1725,7 +1731,7 @@ index 0000000..64baa54
 +  [parent.view addSubview:controller.view];
 +  [controller didMoveToParentViewController:parent];
 +  std::thread(Monitor).detach();
-+  CLog::Log(LOGINFO, "DexHub Apple mode ready");
++  NSLog(@"DexHub Apple mode ready");
 +}
 +
 +bool CTVOSAppleMode::IsShown()
