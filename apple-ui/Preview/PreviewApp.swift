@@ -49,7 +49,14 @@ enum SampleKodi {
                 "label": name, "title": name, "file": "plugin://sample/play/\(index)", "filetype": "file",
                 "year": 2026, "genre": shows ? ["Drama", "Thriller"] : ["Thriller"], "runtime": shows ? 3120 : 6600 + index * 300,
                 "plot": "\(name) follows a quiet investigator through one long winter, where every answer costs a little more than the last.",
-                "rating": 7.1 + Double(index % 3) / 2,
+                "rating": 7.1 + Double(index % 3) / 2, "mpaa": index % 2 == 0 ? "16+" : "13+",
+                "tagline": "Every answer has a price.", "director": ["Mira Hanssen"],
+                "trailer": "plugin://sample/trailer/\(index)",
+                "cast": ["Lena Ortiz", "Tomas Reyes", "Hana Sato", "Idris Cole", "Noor Haddad", "Elias Berg"].enumerated().map { i, person in
+                    ["name": person, "role": i == 0 ? "Inspector Vale" : "Role \(i + 1)"]
+                },
+                "streamdetails": ["video": [["width": index % 3 == 0 ? 3840 : 1920, "hdrtype": index % 3 == 0 ? "dolbyvision" : ""]],
+                                  "audio": [["codec": index % 2 == 0 ? "truehd" : "eac3", "channels": 8]]],
                 "art": ["poster": SampleArt.file(name, kind: .poster, index: index),
                         "fanart": SampleArt.file(name, kind: .backdrop, index: index),
                         "clearlogo": SampleArt.file(name, kind: .logo, index: index)]

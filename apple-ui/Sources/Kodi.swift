@@ -18,11 +18,25 @@ struct MediaItem: Identifiable, Hashable {
     let episode: Int
     let progress: Double
     let art: [String: URL]
+    let cast: [CastMember]
+    let directors: [String]
+    let tagline: String
+    let mpaa: String
+    let premiered: String
+    let trailer: String
+    /// From the file's stream details: "4K", "Dolby Vision", "Atmos"…
+    let badges: [String]
+    /// Seconds left, for Continue Watching.
+    let remaining: Int
 
     var poster: URL? { art["poster"] ?? art["tvshow.poster"] ?? art["thumb"] ?? art["icon"] }
     var backdrop: URL? { art["fanart"] ?? art["tvshow.fanart"] ?? art["landscape"] ?? art["thumb"] }
     var landscape: URL? { art["landscape"] ?? art["tvshow.landscape"] ?? art["fanart"] ?? art["thumb"] }
     var clearLogo: URL? { art["clearlogo"] ?? art["tvshow.clearlogo"] ?? art["logo"] }
+    var timeLeft: String {
+        guard remaining > 0 else { return "" }
+        return remaining >= 3600 ? "\(remaining / 3600)h \(remaining % 3600 / 60)m left" : "\(max(1, remaining / 60))m left"
+    }
     var hasPoster: Bool { art["poster"] != nil || art["tvshow.poster"] != nil }
     /// Worth a details page before playing (it carries more than a name).
     var isRich: Bool { !plot.isEmpty || art["fanart"] != nil }
@@ -34,6 +48,29 @@ struct MediaItem: Identifiable, Hashable {
         if year > 0 { parts.append(String(year)) }
         if runtime > 0 { parts.append(runtime >= 3600 ? "\(runtime / 3600)h \(runtime % 3600 / 60)m" : "\(runtime / 60)m") }
         return parts
+    }
+
+    /// Quality labels in the order Apple's TV app shows them.
+    static func badges(_ details: [String: Any]) -> [String] {
+        var labels: [String] = []
+        if let video = (details["video"] as? [[String: Any]])?.first {
+            let width = video["width"] as? Int ?? 0
+            if width >= 3200 { labels.append("4K") } else if width >= 1800 { labels.append("HD") }
+            switch (video["hdrtype"] as? String ?? "").lowercased() {
+            case "dolbyvision": labels.append("Dolby Vision")
+            case "hdr10", "hdr10plus": labels.append("HDR10")
+            case "hlg": labels.append("HLG")
+            default: break
+            }
+        }
+        if let audio = (details["audio"] as? [[String: Any]])?.first {
+            let codec = (audio["codec"] as? String ?? "").lowercased()
+            let channels = audio["channels"] as? Int ?? 0
+            if codec.contains("truehd") || codec.contains("atmos") { labels.append("Dolby Atmos") }
+            else if codec.contains("eac3") || codec.contains("ac3") { labels.append(channels > 2 ? "Dolby 5.1" : "Dolby") }
+            else if codec.contains("dts") { labels.append("DTS") }
+        }
+        return labels
     }
 
     init(_ row: [String: Any]) {
@@ -55,9 +92,22 @@ struct MediaItem: Identifiable, Hashable {
         if let resume = row["resume"] as? [String: Any], let position = resume["position"] as? Double,
            let total = resume["total"] as? Double, total > 0 {
             progress = position / total
+            remaining = Int(total - position)
         } else {
             progress = 0
+            remaining = 0
         }
+        cast = (row["cast"] as? [[String: Any]] ?? []).prefix(20).compactMap { person in
+            guard let name = person["name"] as? String, !name.isEmpty else { return nil }
+            return CastMember(name: name, role: person["role"] as? String ?? "",
+                              photo: Kodi.imageURL(person["thumbnail"] as? String ?? ""))
+        }
+        directors = row["director"] as? [String] ?? []
+        tagline = row["tagline"] as? String ?? ""
+        mpaa = (row["mpaa"] as? String ?? "").replacingOccurrences(of: "Rated ", with: "")
+        premiered = row["premiered"] as? String ?? ""
+        trailer = row["trailer"] as? String ?? ""
+        badges = Self.badges(row["streamdetails"] as? [String: Any] ?? [:])
         var art: [String: URL] = [:]
         for (key, value) in row["art"] as? [String: String] ?? [:] {
             if let url = Kodi.imageURL(value) { art[key] = url }
@@ -66,6 +116,12 @@ struct MediaItem: Identifiable, Hashable {
         if art["fanart"] == nil, let fanart = row["fanart"] as? String, let url = Kodi.imageURL(fanart) { art["fanart"] = url }
         self.art = art
     }
+}
+
+struct CastMember: Hashable {
+    let name: String
+    let role: String
+    let photo: URL?
 }
 
 struct Addon: Identifiable, Hashable {
@@ -113,8 +169,10 @@ final class Kodi: ObservableObject {
         return object["result"] as? [String: Any] ?? [:]
     }
 
+    // Every name must be in Kodi's List.Fields.Files, or the whole request fails.
     static let fields = ["title", "art", "plot", "year", "rating", "runtime", "genre", "showtitle",
-                         "season", "episode", "thumbnail", "fanart", "resume"]
+                         "season", "episode", "thumbnail", "fanart", "resume", "cast", "director",
+                         "tagline", "mpaa", "premiered", "trailer", "streamdetails"]
 
     func directory(_ path: String) async throws -> [MediaItem] {
         let result = try await call("Files.GetDirectory", ["directory": path, "media": "video", "properties": Self.fields])
@@ -130,6 +188,10 @@ final class Kodi: ObservableObject {
                          icon: Self.imageURL(row["thumbnail"] as? String ?? ""),
                          backdrop: Self.imageURL(row["fanart"] as? String ?? ""))
         }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    func playTrailer(_ file: String) {
+        Task { _ = try? await call("Player.Open", ["item": ["file": file]]) }
     }
 
     func play(_ item: MediaItem) {

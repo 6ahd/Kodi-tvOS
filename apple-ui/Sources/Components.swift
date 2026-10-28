@@ -12,6 +12,24 @@ enum Theme {
     static func tint(for text: String) -> Color { tints[abs(text.hashValue) % tints.count] }
 }
 
+/// Look settings people choose in Settings › Appearance.
+enum Look {
+    static let background = "DexLookBackground"   // full | ambient | plain
+    static let accent = "DexLookAccent"           // violet | teal | gold | white
+    static let rotate = "DexLookRotateFeatured"
+    static let logoCards = "DexLookLogoCards"
+    static let plot = "DexLookShowPlot"
+    static let ratings = "DexLookShowRatings"
+
+    static let accents: [(id: String, name: String, color: Color)] = [
+        ("violet", "Dex Violet", Color(red: 0.643, green: 0.592, blue: 1.0)),
+        ("teal", "Teal", Color(red: 0.37, green: 0.78, blue: 0.9)),
+        ("gold", "Gold", Color(red: 0.96, green: 0.71, blue: 0.36)),
+        ("white", "White", .white)
+    ]
+    static func accentColor(_ id: String) -> Color { accents.first { $0.id == id }?.color ?? accents[0].color }
+}
+
 /// Where a selection leads.
 enum Route: Hashable {
     case directory(path: String, title: String)
@@ -101,12 +119,15 @@ struct LandscapeCard: View {
 
 struct ProgressLine: View {
     let progress: Double
+    @AppStorage(Look.accent) private var accent = "violet"
 
     var body: some View {
         if progress > 0.01 {
             GeometryReader { box in
                 Capsule().fill(.white.opacity(0.3))
-                    .overlay(alignment: .leading) { Capsule().fill(.white).frame(width: box.size.width * min(1, progress)) }
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(Look.accentColor(accent)).frame(width: box.size.width * min(1, progress))
+                    }
             }
             .frame(height: 6)
             .padding(14)
@@ -153,7 +174,6 @@ struct FocusLabel: View {
             .font(.system(size: 22, weight: .semibold))
             .foregroundStyle(focused ? .white : .white.opacity(0.7))
             .lineLimit(1)
-            .offset(y: focused ? 12 : 0)
             .animation(.easeOut(duration: 0.2), value: focused)
     }
 }
@@ -162,5 +182,55 @@ struct FocusLabel: View {
 struct CardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.scaleEffect(configuration.isPressed ? 0.97 : 1)
+    }
+}
+
+/// Continue Watching style: the scene, the title's clear logo over it, and
+/// what is left to watch.
+struct LogoCard: View {
+    let item: MediaItem
+    var width: CGFloat = 520
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Artwork(url: item.landscape ?? item.backdrop ?? item.poster) { TitleTile(title: item.title, size: 34) }
+                .frame(width: width, height: width * 9 / 16)
+            LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 12) {
+                Artwork(url: item.clearLogo, mode: .fit) {
+                    Text(item.showTitle.isEmpty ? item.title : item.showTitle)
+                        .font(.system(size: 34, weight: .heavy)).lineLimit(2).minimumScaleFactor(0.6)
+                }
+                .frame(maxWidth: width * 0.62, maxHeight: 84, alignment: .bottomLeading)
+                HStack(spacing: 12) {
+                    if item.progress > 0.01 {
+                        ProgressLine(progress: item.progress).padding(0).frame(width: 110)
+                    }
+                    Text(([item.timeLeft] + (item.season >= 0 && item.episode >= 0 ? ["S\(item.season), E\(item.episode)"] : []))
+                        .filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(.system(size: 20, weight: .semibold)).foregroundStyle(.white.opacity(0.85))
+                }
+            }
+            .padding(22)
+        }
+        .frame(width: width, height: width * 9 / 16)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .hoverEffect(.highlight)
+    }
+}
+
+/// Round badges like "4K" and "Dolby Vision".
+struct Badges: View {
+    let labels: [String]
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ForEach(labels, id: \.self) { label in
+                Text(label)
+                    .font(.system(size: 17, weight: .bold))
+                    .padding(.horizontal, 10).padding(.vertical, 4)
+                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(.white.opacity(0.55), lineWidth: 1.5))
+            }
+        }
     }
 }
