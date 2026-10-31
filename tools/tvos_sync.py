@@ -50,6 +50,9 @@ def files(root):
             if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc' and p.name != '.DS_Store'}
 
 
+KEPT_BREAK = '\ue000'
+
+
 def pretty(text):
     """One formatting for any XML (indented, comments kept), or None if it does not parse."""
     declaration = re.match(r'\s*<\?xml[^>]*\?>', text)
@@ -63,12 +66,19 @@ def pretty(text):
         for child in list(node.childNodes):
             if child.nodeType == child.TEXT_NODE and not child.data.strip():
                 node.removeChild(child)
+            elif child.nodeType in (child.TEXT_NODE, child.COMMENT_NODE, child.CDATA_SECTION_NODE):
+                # a comment's or text's own line breaks are kept aside, so
+                # every printed line is an indented one and they stay as written;
+                # text between elements loses its edges (it would gain a line each time)
+                if child.nodeType == child.TEXT_NODE and any(n.nodeType == n.ELEMENT_NODE for n in node.childNodes):
+                    child.data = child.data.strip()
+                child.data = child.data.replace('\n', KEPT_BREAK)
             else:
                 strip(child)
     strip(document)
     lines = document.documentElement.toprettyxml(indent='\t').splitlines()[1:-1]
     head = '<?xml version="1.0" encoding="UTF-8"?>\n' if declaration else ''
-    return head + '\n'.join(line[1:] for line in lines) + '\n'
+    return (head + '\n'.join(line[1:] for line in lines) + '\n').replace(KEPT_BREAK, '\n')
 
 
 def read(path, xml):
