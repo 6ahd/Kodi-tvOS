@@ -1205,6 +1205,30 @@ elif __name__ == '__main__':
     except Exception as exc:
         xbmc.log('[DexHub] end-of-episode panel thread failed: %s' % exc, xbmc.LOGWARNING)
 
+    # v5.10.343: Top Shelf rows, Apple TV users and the Skip Intro button
+    # (the app's DexHub.* builtins; Kodi tvOS v21.43 and later)
+    def _appletv_worker():
+        try:
+            from resources.lib import appletv_system as _appletv
+            _appletv.run(monitor)
+        except Exception as exc:
+            xbmc.log('[DexHub] Apple TV features not started: %s' % exc, xbmc.LOGWARNING)
+
+    def _skip_intro_worker():
+        try:
+            from resources.lib import skip_intro as _skip_intro
+            _skip_intro.watch(monitor)
+        except Exception as exc:
+            xbmc.log('[DexHub] Skip Intro not started: %s' % exc, xbmc.LOGWARNING)
+
+    if xbmc.getCondVisibility('System.Platform.TVOS'):
+        try:
+            import threading as _thr
+            _thr.Thread(target=_appletv_worker, name='DexHub-AppleTV', daemon=True).start()
+            _thr.Thread(target=_skip_intro_worker, name='DexHub-SkipIntro', daemon=True).start()
+        except Exception as exc:
+            xbmc.log('[DexHub] Apple TV threads failed: %s' % exc, xbmc.LOGWARNING)
+
     try:
         import threading as _thr
         _thr.Thread(target=_reminders_worker, name='DexHub-reminders', daemon=True).start()

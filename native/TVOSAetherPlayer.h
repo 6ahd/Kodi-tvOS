@@ -11,6 +11,9 @@
 // DexHub v21: bumps when the Kodi layer above Aether must redraw (subtitle text,
 // video size or start). The GUI stays idle otherwise.
 unsigned int DexAetherRedrawRevision();
+// DexHub v21.43: Picture in Picture for the Aether session that is playing.
+// Returns false when the bridge is not loaded (no Aether playback).
+bool DexAetherTogglePictureInPicture();
 
 class CTVOSAetherPlayer final : public IPlayer, private CThread
 {
@@ -55,6 +58,11 @@ public:
   bool IsRenderingVideo() const override;
   bool HasVisibleOverlay() const override;
   bool IsCaching() const override;
+  int GetChapterCount() const override;
+  int GetChapter() const override;
+  void GetChapterName(std::string& name, int chapterIdx = -1) const override;
+  int64_t GetChapterPos(int chapterIdx = -1) const override;
+  int SeekChapter(int chapter) override;
   void SetSubtitleVerticalPosition(int value, bool save) override;
   void GetAudioCapabilities(std::vector<IPlayerAudioCaps>& caps) const override;
   void GetSubtitleCapabilities(std::vector<IPlayerSubtitleCaps>& caps) const override;
@@ -66,6 +74,7 @@ private:
   void Command(const std::string& name, double value = 0, const std::string& text = "");
   struct State;
   static std::string ActiveText(const State& state);
+  static int ChapterAt(const State& state);
   std::unique_ptr<State> m_state;
   mutable std::mutex m_lock;
   std::atomic<bool> m_playing{false};

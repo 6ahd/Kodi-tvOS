@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Skip Intro / Skip Recap (Dex Hub 5.10.343): skip_intro.py -->
+<window>
+	<defaultcontrol always="true">100</defaultcontrol>
+	<animation effect="fade" start="0" end="100" time="220" tween="sine">WindowOpen</animation>
+	<animation effect="fade" start="100" end="0" time="160">WindowClose</animation>
+	<controls>
+		<control type="group">
+			<animation effect="slide" start="60,0" end="0,0" time="260" tween="cubic" easing="out">WindowOpen</animation>
+			<control type="button" id="100">
+				<left>1484</left>
+				<top>900</top>
+				<width>340</width>
+				<height>76</height>
+				<label>[B]$INFO[Window.Property(dexhub.skip.label)][/B]</label>
+				<font>font27</font>
+				<align>center</align>
+				<aligny>center</aligny>
+				<textcolor>FFFFFFFF</textcolor>
+				<focusedcolor>FF101010</focusedcolor>
+				<texturefocus border="26" colordiffuse="FFFFFFFF">$INFO[Window(Home).Property(dexhub.tvos.assetroot)]/resources/media/homeui/pill.png</texturefocus>
+				<texturenofocus border="26" colordiffuse="B3141518">$INFO[Window(Home).Property(dexhub.tvos.assetroot)]/resources/media/homeui/pill.png</texturenofocus>
+				<animation effect="zoom" start="100" end="104" center="1654,938" time="160" tween="sine">Focus</animation>
+				<onup>100</onup>
+				<ondown>100</ondown>
+			</control>
+		</control>
+	</controls>
+</window>

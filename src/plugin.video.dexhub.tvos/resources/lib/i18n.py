@@ -61,6 +61,10 @@ def is_english():
 
 
 STRINGS = {
+    # v5.10.343: Apple TV (Top Shelf, Skip Intro, Picture in Picture)
+    'تخطي المقدمة': 'Skip Intro',
+    'تخطي الملخص': 'Skip Recap',
+    'صورة داخل صورة': 'Picture in Picture',
     # v5.10.311: subtitle filter and source warm-up
     'إظهار لغاتي فقط': 'Show my languages only',
     'إظهار كل الترجمات': 'Show every subtitle',

@@ -2479,3 +2479,7 @@ msgstr ""
 msgctxt "#31195"
 msgid "Reload skin"
 msgstr ""
+
+msgctxt "#32151"
+msgid "Picture in Picture"
+msgstr ""

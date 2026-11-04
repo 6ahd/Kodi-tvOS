@@ -38,7 +38,7 @@ if grep -Eq ' [A-Z] _av(codec|format|util|_)[A-Za-z_0-9]*$' "$BUILD/exported-sym
   exit 1
 fi
 grep 'DexAetherBridge' "$BUILD/exported-symbols.txt"
-for API in startEmbedded snapshotForToken command; do
+for API in startEmbedded snapshotForToken command togglePictureInPicture pictureInPictureState; do
   grep -q "$API" "$BUILD/exported-symbols.txt" || { echo "Missing native bridge API: $API"; exit 1; }
 done
 # Xcode may omit custom INFOPLIST_KEY settings for generated framework plists.

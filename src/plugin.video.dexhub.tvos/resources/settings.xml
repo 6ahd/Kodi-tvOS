@@ -7,6 +7,12 @@
         <setting id="tvos_external_player" type="labelenum" label="المشغل الخارجي / External app" values="Infuse|VidHub|SenPlayer|VLC|Native Player|Outplayer|nPlayer" default="Infuse" visible="false" />
         <setting type="action" label="إضافة خطوط السكين لترجمة Kodi / Install subtitle fonts" action="RunScript(script.dexhub.tvos.players,fonts)" />
     </category>
+    <category label="tvOS — Apple TV">
+        <setting id="appletv_topshelf" type="bool" label="متابعة المشاهدة فوق أيقونة التطبيق (Top Shelf) / Continue Watching on the Top Shelf" default="true" />
+        <setting id="appletv_skip_intro" type="bool" label="زر تخطي المقدمة والملخص / Skip Intro and Recap button" default="true" />
+        <setting type="action" label="اربط مستخدم Apple TV الحالي بهذا الملف / Link this Apple TV user to this profile" action="DexHub.AppleTVUser(link)" />
+        <setting type="action" label="ألغِ ربط مستخدم Apple TV الحالي / Unlink this Apple TV user" action="DexHub.AppleTVUser(unlink)" />
+    </category>
 	<category label="30930">
 		<setting type="action" label="32917" action="RunPlugin(plugin://plugin.video.dexhub.tvos/?action=phone_setup)" />
 		<setting type="action" label="31076" action="RunPlugin(plugin://plugin.video.dexhub.tvos/?action=skin_pick)" />

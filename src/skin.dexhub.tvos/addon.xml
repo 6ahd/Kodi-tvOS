@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<addon id="skin.dexhub.tvos" version="3.28.79" name="Dex Hub Skin (Apple TV)" provider-name="DexWorld">
+<addon id="skin.dexhub.tvos" version="3.28.80" name="Dex Hub Skin (Apple TV)" provider-name="DexWorld">
     <requires>
         <import addon="xbmc.gui" version="5.17.0" />
         <import addon="plugin.video.dexhub.tvos" version="5.10.160" optional="true" />

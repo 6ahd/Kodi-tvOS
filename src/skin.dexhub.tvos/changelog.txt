@@ -1,3 +1,6 @@
+2026-11-04 · 3.28.80 · Picture in Picture button
+- Player bar: a Picture in Picture button while Aether plays on Apple TV (Player buttons can hide it).
+
 2026-10-17 · 3.28.79 · Screensaver styles, sources page, island week, lighter skin
 - Home backdrop from dhs.bg (set when the cursor rests), the live one without the service.
 - Clean trailer: the hero's text and the corner logo fade during the trailer stage and full screen.

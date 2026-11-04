@@ -8,6 +8,9 @@
 #include "cores/DataCacheCore.h"
 #include "cores/VideoPlayer/DVDSubtitles/SubtitlesAdapter.h"
 #include "cores/VideoPlayer/VideoRenderers/OverlayRenderer.h"
+#include "guilib/GUIComponent.h"
+#include "guilib/GUIWindowManager.h"
+#include "guilib/WindowIDs.h"
 #include "filesystem/SpecialProtocol.h"
 #include "messaging/ApplicationMessenger.h"
 #include "platform/darwin/tvos/filesystem/TVOSFileUtils.h"
@@ -27,11 +30,13 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 
 @interface NSObject (DexAetherNativeAPI)
 + (void)startEmbedded:(NSDictionary*)request inView:(UIView*)parent belowView:(UIView*)overlay;
 + (NSDictionary*)snapshotForToken:(NSString*)token;
 + (void)command:(NSDictionary*)request;
++ (NSNumber*)togglePictureInPicture;
 @end
 
 namespace
@@ -79,6 +84,11 @@ std::vector<Track> Tracks(NSArray* rows)
 }
 std::atomic<unsigned int> g_redraw{1};
 void RequestRedraw() { g_redraw.fetch_add(1, std::memory_order_relaxed); }
+struct Chapter
+{
+  std::string name;
+  double start;
+};
 int TrackIndex(const std::vector<Track>& tracks, int id)
 {
   for (size_t index = 0; index < tracks.size(); ++index)
@@ -94,6 +104,9 @@ struct CTVOSAetherPlayer::State
   std::string token;
   std::string status{"loading"}, codec, hdr;
   std::vector<Track> audio, subtitles;
+  std::vector<Chapter> chapters;
+  bool pip{false};
+  int pipRestore{0};
   std::vector<std::string> externalPaths;
   int audioId{-1}, subtitleId{-1}, savedSubtitle{-1}, width{0}, height{0};
   int trackRevision{-1};
@@ -111,6 +124,29 @@ struct CTVOSAetherPlayer::State
 };
 
 unsigned int DexAetherRedrawRevision() { return g_redraw.load(std::memory_order_relaxed); }
+
+bool DexAetherTogglePictureInPicture()
+{
+  // Builtins run on Kodi's thread; the bridge and AVKit live on the main thread.
+  // Asynchronous: the main thread may itself be waiting on Kodi (app lifecycle).
+  Class pipBridge = Bridge("Aether", false);
+  if (![pipBridge respondsToSelector:@selector(togglePictureInPicture)])
+    return false;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [Bridge("Aether", false) togglePictureInPicture];
+  });
+  return true;
+}
+
+int CTVOSAetherPlayer::ChapterAt(const State& state)
+{
+  // 1-based like VideoPlayer; -1 when nothing has started yet.
+  int chapter = -1;
+  for (size_t index = 0; index < state.chapters.size(); ++index)
+    if (state.position + 0.5 >= state.chapters[index].start)
+      chapter = static_cast<int>(index) + 1;
+  return chapter;
+}
 
 std::string CTVOSAetherPlayer::ActiveText(const State& state)
 {
@@ -161,6 +197,7 @@ bool CTVOSAetherPlayer::OpenFile(const CFileItem& file, const CPlayerOptions& op
     CDataCacheCore::GetInstance().SetGuiRender(true);
     CDataCacheCore::GetInstance().SetVideoRender(!state.external);
     CDataCacheCore::GetInstance().SetSpeed(1, 1);
+    CDataCacheCore::GetInstance().SetChapters({});
     NSMutableDictionary* request = [NSMutableDictionary dictionaryWithDictionary:@{
       @"token": NS(state.token), @"url": NS(file.GetDynPath()),
       @"position": @(state.position), @"percent": @(options.startpercent),
@@ -283,7 +320,7 @@ void CTVOSAetherPlayer::Process()
   bool ended = false, failed = false;
   while (!m_bStop)
   {
-    bool start = false;
+    bool start = false, leaveFullscreen = false, enterFullscreen = false;
     @autoreleasepool
     {
       NSString* token = NS(m_state->token);
@@ -306,6 +343,16 @@ void CTVOSAetherPlayer::Process()
         {
           state.audio = Tracks(snapshot[@"audio"]);
           state.subtitles = Tracks(snapshot[@"subtitles"]);
+          state.chapters.clear();
+          std::vector<std::pair<std::string, int64_t>> marks;
+          for (NSDictionary* row in snapshot[@"chapters"])
+            if ([row isKindOfClass:[NSDictionary class]])
+            {
+              state.chapters.push_back({String(row[@"name"]), [row[@"start"] doubleValue]});
+              marks.emplace_back(state.chapters.back().name, std::llround(state.chapters.back().start));
+            }
+          // Seek bar marks (Player.Chapters), in seconds as VideoPlayer gives them.
+          CDataCacheCore::GetInstance().SetChapters(marks);
           state.trackRevision = revision;
           size_t sidecar = 0;
           for (auto& track : state.subtitles)
@@ -352,6 +399,16 @@ void CTVOSAetherPlayer::Process()
           start = state.started = true;
           RequestRedraw();
         }
+        // v21.43: Picture in Picture. Starting it leaves the full screen video
+        // window (as Apple's player does); the window's restore button brings it back.
+        const bool pip = [snapshot[@"pip"] boolValue];
+        const int pipRestore = [snapshot[@"pipRestore"] intValue];
+        if (pip && !state.pip)
+          leaveFullscreen = true;
+        if (pipRestore != state.pipRestore && state.started)
+          enterFullscreen = true;
+        state.pip = pip;
+        state.pipRestore = pipRestore;
         ended = state.status == "ended";
         failed = state.status == "error";
         if (failed)
@@ -370,6 +427,15 @@ void CTVOSAetherPlayer::Process()
         CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SWITCHTOFULLSCREEN);
       }
     }
+    if (leaveFullscreen)
+    {
+      auto* gui = CServiceBroker::GetGUI();
+      if (gui && gui->GetWindowManager().IsWindowActive(WINDOW_FULLSCREEN_VIDEO))
+        CServiceBroker::GetAppMessenger()->PostMsg(TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr,
+                                                   "Action(Back,12005)");
+    }
+    if (enterFullscreen)
+      CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SWITCHTOFULLSCREEN);
     if (ended || failed)
       break;
     if (!m_state->started && std::chrono::steady_clock::now() > deadline)
@@ -427,7 +493,17 @@ void CTVOSAetherPlayer::SetSpeed(float speed)
   else m_callback.OnPlayBackResumed();
 }
 void CTVOSAetherPlayer::Seek(bool plus, bool large, bool chapter)
-{ SeekTimeRelative((plus ? 1 : -1) * (large ? 600000 : 10000)); }
+{
+  // v21.43: a large step moves by chapter when the file has chapters (VideoPlayer does the same).
+  int current = -1, count = 0;
+  { std::lock_guard lock(m_lock); count = m_state->chapters.size(); current = ChapterAt(*m_state); }
+  if ((chapter || large) && count > 1)
+  {
+    const int target = plus ? current + 1 : std::max(1, current - 1);
+    if (target <= count) { SeekChapter(target); return; }
+  }
+  SeekTimeRelative((plus ? 1 : -1) * (large ? 600000 : 10000));
+}
 void CTVOSAetherPlayer::SeekPercentage(float percent)
 {
   double total;
@@ -550,6 +626,34 @@ float CTVOSAetherPlayer::GetRenderAspectRatio() const
 { std::lock_guard lock(m_lock); return m_state->height > 0 ? float(m_state->width) / m_state->height : 1; }
 bool CTVOSAetherPlayer::IsRenderingVideo() const { return m_playing; }
 bool CTVOSAetherPlayer::IsCaching() const { std::lock_guard lock(m_lock); return m_state->status == "loading"; }
+int CTVOSAetherPlayer::GetChapterCount() const { std::lock_guard lock(m_lock); return m_state->chapters.size(); }
+int CTVOSAetherPlayer::GetChapter() const { std::lock_guard lock(m_lock); return ChapterAt(*m_state); }
+void CTVOSAetherPlayer::GetChapterName(std::string& name, int chapterIdx) const
+{
+  std::lock_guard lock(m_lock);
+  if (chapterIdx == -1) chapterIdx = ChapterAt(*m_state);
+  if (chapterIdx > 0 && chapterIdx <= int(m_state->chapters.size()))
+    name = m_state->chapters[chapterIdx - 1].name;
+}
+int64_t CTVOSAetherPlayer::GetChapterPos(int chapterIdx) const
+{
+  std::lock_guard lock(m_lock);
+  if (chapterIdx == -1) chapterIdx = ChapterAt(*m_state);
+  if (chapterIdx > 0 && chapterIdx <= int(m_state->chapters.size()))
+    return std::llround(m_state->chapters[chapterIdx - 1].start);  // seconds, as VideoPlayer
+  return -1;
+}
+int CTVOSAetherPlayer::SeekChapter(int chapter)
+{
+  double start;
+  { std::lock_guard lock(m_lock);
+    if (m_state->chapters.empty()) return -1;
+    chapter = std::clamp(chapter, 1, int(m_state->chapters.size()));
+    start = m_state->chapters[chapter - 1].start;
+  }
+  SeekTime(int64_t(start * 1000));
+  return 0;
+}
 void CTVOSAetherPlayer::GetRects(CRect& source, CRect& dest, CRect& view) const
 { std::lock_guard lock(m_lock); source = m_state->source; dest = m_state->dest; view = m_state->view; }
 bool CTVOSAetherPlayer::HasVisibleOverlay() const

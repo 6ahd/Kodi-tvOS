@@ -1,3 +1,9 @@
+2026-11-04 · 5.10.343 · Apple TV: Top Shelf, Skip Intro, Picture in Picture (test build)
+- Continue Watching on the Apple TV Top Shelf, with progress; a card opens the title as in Dex Hub.
+- Skip Intro and Skip Recap button from TheIntroDB or the video's chapters (off with TheIntroDB's add-on).
+- Picture in Picture button in the player bar (Aether); the Apple TV user can open their own Kodi profile.
+- New settings: tvOS — Apple TV. Needs Kodi tvOS v21.43 or later; older apps ignore the new calls.
+
 2026-10-18 · 5.10.342 · Silo alerts in the skin panel (test build)
 - Merge the native unread Silo inbox into the actual skin Alerts panel and count.
 - Open and mark native alerts using the current profile's event, with durable receipts.

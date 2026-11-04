@@ -3,7 +3,19 @@
 @interface DexHubSceneDelegate : UIResponder <UIWindowSceneDelegate>
 @property(nullable, nonatomic, strong) UIWindow* window;
 @property(nonatomic) BOOL wasBackgrounded;
+// v21.43: Kodi kept running in the background for a Picture in Picture window.
+@property(nonatomic) BOOL keptForPictureInPicture;
 @end
+
+static BOOL DexHubPictureInPictureActive()
+{
+  Class bridge = NSClassFromString(@"DexAetherBridge");
+  SEL state = NSSelectorFromString(@"pictureInPictureState");
+  if (![bridge respondsToSelector:state])
+    return NO;
+  NSNumber* (*call)(id, SEL) = (NSNumber * (*)(id, SEL))[bridge methodForSelector:state];
+  return [call(bridge, state) boolValue];
+}
 
 @implementation DexHubSceneDelegate
 
@@ -41,7 +53,35 @@
   self.wasBackgrounded = YES;
   XBMCController* controller = (XBMCController*)self.window.rootViewController;
   [controller pauseAnimation];
+  // Kodi's background path stops playback (power manager sleep). While the video
+  // floats in Picture in Picture the player has to keep running, so only the GUI
+  // pauses. Closing the window later finishes the usual background path.
+  if (DexHubPictureInPictureActive())
+  {
+    self.keptForPictureInPicture = YES;
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(pictureInPictureDidStop:)
+                                                 name:@"DexAetherPictureInPictureDidStop"
+                                               object:nil];
+    return;
+  }
   [controller enterBackground];
+}
+
+- (void)pictureInPictureDidStop:(NSNotification*)notification
+{
+  [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                  name:@"DexAetherPictureInPictureDidStop"
+                                                object:nil];
+  if (!self.keptForPictureInPicture)
+    return;
+  self.keptForPictureInPicture = NO;
+  // The restore button brings the app forward first; only a window closed while
+  // the app is still in the background needs the deferred background path.
+  if (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground)
+    [(XBMCController*)self.window.rootViewController enterBackground];
+  else
+    self.wasBackgrounded = NO;
 }
 
 - (void)sceneWillEnterForeground:(UIScene*)scene
@@ -51,6 +91,16 @@
   self.wasBackgrounded = NO;
   XBMCController* controller = (XBMCController*)self.window.rootViewController;
   [controller resumeAnimation];
+  if (self.keptForPictureInPicture)
+  {
+    // Kodi never went to sleep: nothing to wake, only a Top Shelf request to run.
+    self.keptForPictureInPicture = NO;
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:@"DexAetherPictureInPictureDidStop"
+                                                  object:nil];
+    CTVOSTopShelf::GetInstance().RunTopShelf();
+    return;
+  }
   [controller enterForeground];
 }
 
@@ -60,6 +110,9 @@
       (XBMCApplicationDelegate*)UIApplication.sharedApplication.delegate;
   for (UIOpenURLContext* context in URLContexts)
     [app application:UIApplication.sharedApplication openURL:context.URL options:@{}];
+  // v21.43: Kodi is running here (the scene was already connected). A Top Shelf
+  // card can arrive after the foreground call that would otherwise run it.
+  CTVOSTopShelf::GetInstance().RunTopShelf();
 }
 @end
 

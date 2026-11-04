@@ -22,7 +22,7 @@ import xbmcgui
 SETTING = 'osd_buttons'
 SLOTS = 10     # skin.dexhub draws 9 slots, skin.dexhub.tvos 10 (with External)
 # bar order, left to right; "-" = hidden by default
-DEFAULT = ('sources', 'episodes', 'info', 'audio', 'subtitles', 'subsync', '-nextsub', 'external', 'video', 'ppi')
+DEFAULT = ('sources', 'episodes', 'info', 'audio', 'subtitles', 'subsync', '-nextsub', 'external', 'pip', 'video', 'ppi')
 KEYS = tuple(k.lstrip('-') for k in DEFAULT)
 NAMES = {
     'sources': ('المصادر', 'Sources'),
@@ -33,6 +33,7 @@ NAMES = {
     'subsync': ('مزامنة الترجمة', 'Sync subtitle'),
     'nextsub': ('الترجمة التالية', 'Next subtitle'),
     'external': ('المشغل الخارجي', 'External player'),
+    'pip': ('صورة داخل صورة', 'Picture in Picture'),
     'video': ('إعدادات المشغل', 'Player settings'),
     'ppi': ('معلومات التشغيل PPI', 'PPI playback info'),
 }
@@ -45,6 +46,7 @@ NOTES = {
     'nextsub': ('وبعد آخر ترجمة: بدون ترجمة', 'After the last one: subtitles off'),
     'ppi': ('يحتاج TinyPPI', 'Needs TinyPPI'),
     'external': ('على Apple TV فقط', 'Apple TV only'),
+    'pip': ('يظهر مع مشغل Aether على Apple TV', 'Shows with the Aether player on Apple TV'),
 }
 # v5.10.289: what each button does, one line in the editor
 DOES = {
@@ -56,13 +58,14 @@ DOES = {
     'subsync': ('يزامن الترجمة الشغالة أو يختار الأنسب', 'Syncs the playing subtitle or picks the best one'),
     'nextsub': ('ينتقل للترجمة التالية بضغطة', 'Moves to the next subtitle in one press'),
     'external': ('يفتح الفيديو في مشغل خارجي', 'Opens the video in an external player'),
+    'pip': ('يصغّر الفيديو في نافذة وتكمل التصفح', 'Shrinks the video to a window while you browse'),
     'video': ('إعدادات الصورة والتشغيل', 'Picture and playback settings'),
     'ppi': ('معلومات التشغيل وأوضاع Dolby Vision', 'Playback info and Dolby Vision modes'),
 }
 # the bar's icons, copies of the OSD's own (resources/media/osdbar)
 ICONS = {
     'sources': 'layers', 'episodes': 'list-video', 'info': 'info', 'audio': 'audio-lines', 'subtitles': 'captions',
-    'subsync': 'subsync', 'nextsub': 'subnext', 'external': 'external', 'video': 'ratio', 'ppi': 'ppi',
+    'subsync': 'subsync', 'nextsub': 'subnext', 'external': 'external', 'pip': 'pip', 'video': 'ratio', 'ppi': 'ppi',
 }
 LEFT_ICONS = ('pause-f', 'skip-back', 'skip-forward', 'stop-f')
 
@@ -75,8 +78,8 @@ def _tvos():
 
 
 def _offered(key):
-    """External player only on Apple TV."""
-    return key != 'external' or _tvos()
+    """External player and Picture in Picture only on Apple TV."""
+    return key not in ('external', 'pip') or _tvos()
 
 
 def _addon():

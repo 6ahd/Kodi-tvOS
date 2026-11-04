@@ -86,12 +86,16 @@ cp "$BASE/licenses/"*.txt "$APP/Licenses/" 2>/dev/null || true
 # shipped an old Dex Hub even when src/ was newer.
 "$PYTHON" "$BASE/release_assets.py"
 "$PYTHON" "$BASE/package_assets.py" "$BASE" "$APP" "$MINIMUM"
+# v21.43: the skin's images as one texture bundle (Kodi's own build tool)
+PACKER="$(ls "$NATIVE/bin/TexturePacker" "$NATIVE/bin/kodi-TexturePacker" 2>/dev/null | head -1 || true)"
+[ -n "$PACKER" ] || PACKER="$(find "$KODI_BUILD" -type f -name TexturePacker -perm -u+x 2>/dev/null | head -1 || true)"
+bash "$BASE/pack_textures.sh" "$APP" "$PACKER"
 xcrun swift-stdlib-tool --copy --platform appletvos \
   --scan-executable "$APP/Frameworks/DexAetherBridge.framework/DexAetherBridge" \
   --scan-folder "$APP/Frameworks" --destination "$APP/Frameworks"
 bash "$BASE/normalize_frameworks.sh" "$APP"
 
-OUT="${DEX_OUTPUT_DIR:-$HOME/Downloads}/Kodi-DexHub-AetherOnly-v21.42-TEST-unsigned-$(date +%Y%m%d-%H%M%S).ipa"
+OUT="${DEX_OUTPUT_DIR:-$HOME/Downloads}/Kodi-DexHub-AetherOnly-v21.43-TEST-unsigned-$(date +%Y%m%d-%H%M%S).ipa"
 ditto -c -k --keepParent "$STAGE/Payload" "$OUT"
 unzip -t "$OUT" >/dev/null
 for ASSET in "$BASE"/assets/*.zip; do

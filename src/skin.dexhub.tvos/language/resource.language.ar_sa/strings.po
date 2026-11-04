@@ -2317,3 +2317,7 @@ msgstr "إعدادات الواجهة"
 msgctxt "#31195"
 msgid "Reload skin"
 msgstr "إعادة تحميل الواجهة"
+
+msgctxt "#32151"
+msgid "Picture in Picture"
+msgstr "صورة داخل صورة"

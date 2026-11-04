@@ -184,6 +184,8 @@ if 'dexhub-player' not in schemes:
 
 from native_player_adapter import plan_native
 plan_native(root, base, planned, replace_one)
+from appletv_adapter import plan_appletv
+plan_appletv(root, base, planned, replace_one)
 
 changes = [(name, text) for name, text in planned.items() if not (root/name).exists() or (root/name).read_text() != text]
 print('Compatible source:', root)

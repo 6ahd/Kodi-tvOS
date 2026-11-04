@@ -17,6 +17,7 @@ A modified Kodi 22 for Apple TV with:
 - **Three ways to play:** Aether, Kodi's own player, or an external app (Infuse, VidHub, SenPlayer, VLC, Native Player, Outplayer or nPlayer) with resume and subtitle hand-off where the app takes them.
 - **Dex Hub add-on and skin** installed on first launch, with Arabic subtitle fonts.
 - **Performance:** Release build; the interface runs in the Apple TV's own mode (60 Hz).
+- **Apple TV features (v21.43):** Continue Watching on the Top Shelf, Picture in Picture with Aether, chapters, a Skip Intro button, and an Apple TV user can open their own Kodi profile. See [UPDATE-v21.43-AR.md](UPDATE-v21.43-AR.md); not yet built or tried on a device.
 - **Set up from your phone.** tvOS has no file browser and typing with the remote is slow, so Dex Hub shows a QR code on the TV. Scan it and a page opens on your phone (same Wi‑Fi) where you link accounts (Nuvio, Trakt, Stremio, Plex, Emby, Jellyfin, IPTV), pick the Home layout, arrange rows, choose one of 28 themes and the language, and move files both ways: add-on ZIPs, subtitles, fonts, backups and restores. Every change reaches the TV right away.
 
 ### Requirements
@@ -43,8 +44,8 @@ Sign and install the `-fixed.ipa` it writes. Builds from v20 on do this already.
 ### Repository layout
 | Path | What |
 |---|---|
-| `src/plugin.video.dexhub.tvos` | Dex Hub add-on for Apple TV (5.10.342) |
-| `src/skin.dexhub.tvos` | Dex Hub skin for Apple TV (3.28.79) |
+| `src/plugin.video.dexhub.tvos` | Dex Hub add-on for Apple TV (5.10.343) |
+| `src/skin.dexhub.tvos` | Dex Hub skin for Apple TV (3.28.80) |
 | `native/`, `apply_bridge.py`, `native_player_adapter.py` | Kodi source changes |
 | `DexAetherEmbedded.swift` | Swift bridge between Kodi and Aether |
 | `script.dexhub.tvos.players`, `script.module.dexhub.tvos.compat` | player choice and tvOS compatibility add-ons |
@@ -94,6 +95,7 @@ The build pins Aether 7.40.1 (commit `93d54e5`) and its packages, builds the sma
 - **ثلاثة خيارات تشغيل:** Aether، ومشغل Kodi الأصلي، أو تطبيق خارجي (Infuse، VidHub، SenPlayer، VLC، Native Player، Outplayer أو nPlayer) مع تمرير الوقت والترجمة للتطبيقات اللي تقبلها.
 - **إضافة Dex Hub وسكين Dex Hub** مثبتة داخل التطبيق من أول تشغيل، مع خطوط عربية للترجمة.
 - **أداء:** بناء Release، والواجهة على معدل Apple TV نفسه (60Hz).
+- **مزايا Apple TV (v21.43):** متابعة المشاهدة في Top Shelf، صورة داخل صورة مع Aether، الفصول، زر تخطي المقدمة، وربط مستخدم Apple TV بملف Kodi. التفاصيل في [UPDATE-v21.43-AR.md](UPDATE-v21.43-AR.md)، ولم يُبنَ أو يُجرَّب على جهاز بعد.
 - **الإعداد من الجوال.** Apple TV ما فيه متصفح ملفات، والكتابة بالريموت بطيئة، فـ Dex Hub يعرض رمز QR على التلفزيون. امسحه وتفتح صفحة على جوالك (نفس شبكة الواي فاي) تربط منها الحسابات (Nuvio وTrakt وStremio وPlex وEmby وJellyfin وIPTV)، وتختار شكل الرئيسية، وترتب الصفوف، وتختار من 28 ثيم واللغة، وتنقل الملفات بالاتجاهين: إضافات ZIP والترجمات والخطوط والنسخ الاحتياطية والاسترجاع. أي تغيير يوصل التلفزيون فورا.
 
 ### المتطلبات
@@ -120,8 +122,8 @@ bash FIX-SIGNING.command /path/to/file.ipa
 ### محتوى المستودع
 | المسار | المحتوى |
 |---|---|
-| `src/plugin.video.dexhub.tvos` | إضافة Dex Hub لـ Apple TV (5.10.342) |
-| `src/skin.dexhub.tvos` | سكين Dex Hub لـ Apple TV (3.28.79) |
+| `src/plugin.video.dexhub.tvos` | إضافة Dex Hub لـ Apple TV (5.10.343) |
+| `src/skin.dexhub.tvos` | سكين Dex Hub لـ Apple TV (3.28.80) |
 | `native/` و`apply_bridge.py` و`native_player_adapter.py` | تعديلات سورس Kodi |
 | `DexAetherEmbedded.swift` | جسر Swift بين Kodi وAether |
 | `script.dexhub.tvos.players` و`script.module.dexhub.tvos.compat` | اختيار المشغل وتوافق tvOS |

@@ -51,5 +51,5 @@ for backup in sorted((source/'.dexhub-backups').iterdir(),reverse=True):
         run('--restore',str(backup))
 assert not (source/'xbmc/platform/darwin/tvos/TVOSDexHubSetup.mm').exists()
 assert subprocess.run(['git','-C',str(source),'diff'],capture_output=True,check=True).stdout==before_diff
-assert 'Source files to change: 24' in run('--check')
+assert 'Source files to change: 30' in run('--check')  # v21.43: +6 Apple TV files
 print('PASS: RC1 apply/idempotency/restore; setup before addon scan/services; routing; subtitle deadlock fix retained')

@@ -14384,6 +14384,7 @@
 	<expression name="DhOsdOk_external">[System.Platform.TVOS]</expression>
 	<expression name="DhOsdOk_video">true</expression>
 	<expression name="DhOsdOk_ppi">[System.HasAddon(script.tinyppi)]</expression>
+	<expression name="DhOsdOk_pip">[System.Platform.TVOS + String.IsEqual(Player.Process(videodecoder),Aether)]</expression>
 	<expression name="DhOsdIs_1_sources">[String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),sources) | String.IsEmpty(Window(Home).Property(dhs.pref.osd_order))]</expression>
 	<expression name="DhOsdIs_1_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),episodes)</expression>
 	<expression name="DhOsdIs_1_info">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),info)</expression>
@@ -14394,7 +14395,8 @@
 	<expression name="DhOsdIs_1_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),external)</expression>
 	<expression name="DhOsdIs_1_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),video)</expression>
 	<expression name="DhOsdIs_1_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),ppi)</expression>
-	<expression name="DhOsdSlotVis_1">[[$EXP[DhOsdIs_1_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_1_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_1_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_1_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_1_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_1_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_1_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_1_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_1_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_1_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_1_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_1),pip)</expression>
+	<expression name="DhOsdSlotVis_1">[[$EXP[DhOsdIs_1_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_1_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_1_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_1_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_1_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_1_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_1_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_1_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_1_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_1_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_1_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_1">[[$EXP[DhOsdIs_1_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_1_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_2_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_2),sources)</expression>
 	<expression name="DhOsdIs_2_episodes">[String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_2),episodes) | String.IsEmpty(Window(Home).Property(dhs.pref.osd_order))]</expression>
@@ -14406,7 +14408,8 @@
 	<expression name="DhOsdIs_2_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_2),external)</expression>
 	<expression name="DhOsdIs_2_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_2),video)</expression>
 	<expression name="DhOsdIs_2_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_2),ppi)</expression>
-	<expression name="DhOsdSlotVis_2">[[$EXP[DhOsdIs_2_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_2_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_2_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_2_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_2_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_2_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_2_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_2_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_2_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_2_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_2_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_2),pip)</expression>
+	<expression name="DhOsdSlotVis_2">[[$EXP[DhOsdIs_2_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_2_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_2_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_2_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_2_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_2_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_2_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_2_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_2_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_2_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_2_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_2">[[$EXP[DhOsdIs_2_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_2_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_3_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_3),sources)</expression>
 	<expression name="DhOsdIs_3_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_3),episodes)</expression>
@@ -14418,7 +14421,8 @@
 	<expression name="DhOsdIs_3_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_3),external)</expression>
 	<expression name="DhOsdIs_3_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_3),video)</expression>
 	<expression name="DhOsdIs_3_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_3),ppi)</expression>
-	<expression name="DhOsdSlotVis_3">[[$EXP[DhOsdIs_3_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_3_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_3_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_3_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_3_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_3_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_3_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_3_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_3_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_3_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_3_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_3),pip)</expression>
+	<expression name="DhOsdSlotVis_3">[[$EXP[DhOsdIs_3_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_3_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_3_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_3_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_3_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_3_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_3_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_3_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_3_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_3_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_3_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_3">[[$EXP[DhOsdIs_3_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_3_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_4_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_4),sources)</expression>
 	<expression name="DhOsdIs_4_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_4),episodes)</expression>
@@ -14430,7 +14434,8 @@
 	<expression name="DhOsdIs_4_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_4),external)</expression>
 	<expression name="DhOsdIs_4_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_4),video)</expression>
 	<expression name="DhOsdIs_4_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_4),ppi)</expression>
-	<expression name="DhOsdSlotVis_4">[[$EXP[DhOsdIs_4_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_4_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_4_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_4_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_4_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_4_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_4_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_4_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_4_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_4_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_4_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_4),pip)</expression>
+	<expression name="DhOsdSlotVis_4">[[$EXP[DhOsdIs_4_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_4_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_4_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_4_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_4_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_4_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_4_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_4_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_4_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_4_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_4_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_4">[[$EXP[DhOsdIs_4_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_4_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_5_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_5),sources)</expression>
 	<expression name="DhOsdIs_5_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_5),episodes)</expression>
@@ -14442,7 +14447,8 @@
 	<expression name="DhOsdIs_5_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_5),external)</expression>
 	<expression name="DhOsdIs_5_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_5),video)</expression>
 	<expression name="DhOsdIs_5_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_5),ppi)</expression>
-	<expression name="DhOsdSlotVis_5">[[$EXP[DhOsdIs_5_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_5_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_5_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_5_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_5_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_5_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_5_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_5_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_5_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_5_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_5_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_5),pip)</expression>
+	<expression name="DhOsdSlotVis_5">[[$EXP[DhOsdIs_5_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_5_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_5_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_5_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_5_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_5_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_5_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_5_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_5_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_5_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_5_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_5">[[$EXP[DhOsdIs_5_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_5_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_6_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_6),sources)</expression>
 	<expression name="DhOsdIs_6_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_6),episodes)</expression>
@@ -14454,7 +14460,8 @@
 	<expression name="DhOsdIs_6_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_6),external)</expression>
 	<expression name="DhOsdIs_6_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_6),video)</expression>
 	<expression name="DhOsdIs_6_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_6),ppi)</expression>
-	<expression name="DhOsdSlotVis_6">[[$EXP[DhOsdIs_6_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_6_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_6_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_6_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_6_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_6_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_6_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_6_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_6_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_6_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_6_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_6),pip)</expression>
+	<expression name="DhOsdSlotVis_6">[[$EXP[DhOsdIs_6_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_6_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_6_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_6_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_6_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_6_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_6_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_6_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_6_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_6_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_6_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_6">[[$EXP[DhOsdIs_6_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_6_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_7_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_7),sources)</expression>
 	<expression name="DhOsdIs_7_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_7),episodes)</expression>
@@ -14466,7 +14473,8 @@
 	<expression name="DhOsdIs_7_external">[String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_7),external) | String.IsEmpty(Window(Home).Property(dhs.pref.osd_order))]</expression>
 	<expression name="DhOsdIs_7_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_7),video)</expression>
 	<expression name="DhOsdIs_7_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_7),ppi)</expression>
-	<expression name="DhOsdSlotVis_7">[[$EXP[DhOsdIs_7_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_7_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_7_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_7_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_7_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_7_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_7_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_7_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_7_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_7_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_7_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_7),pip)</expression>
+	<expression name="DhOsdSlotVis_7">[[$EXP[DhOsdIs_7_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_7_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_7_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_7_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_7_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_7_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_7_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_7_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_7_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_7_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_7_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_7">[[$EXP[DhOsdIs_7_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_7_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_8_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_8),sources)</expression>
 	<expression name="DhOsdIs_8_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_8),episodes)</expression>
@@ -14478,7 +14486,8 @@
 	<expression name="DhOsdIs_8_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_8),external)</expression>
 	<expression name="DhOsdIs_8_video">[String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_8),video) | String.IsEmpty(Window(Home).Property(dhs.pref.osd_order))]</expression>
 	<expression name="DhOsdIs_8_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_8),ppi)</expression>
-	<expression name="DhOsdSlotVis_8">[[$EXP[DhOsdIs_8_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_8_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_8_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_8_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_8_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_8_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_8_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_8_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_8_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_8_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_8_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_8),pip)</expression>
+	<expression name="DhOsdSlotVis_8">[[$EXP[DhOsdIs_8_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_8_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_8_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_8_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_8_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_8_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_8_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_8_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_8_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_8_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_8_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_8">[[$EXP[DhOsdIs_8_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_8_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_9_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_9),sources)</expression>
 	<expression name="DhOsdIs_9_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_9),episodes)</expression>
@@ -14490,7 +14499,8 @@
 	<expression name="DhOsdIs_9_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_9),external)</expression>
 	<expression name="DhOsdIs_9_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_9),video)</expression>
 	<expression name="DhOsdIs_9_ppi">[String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_9),ppi) | String.IsEmpty(Window(Home).Property(dhs.pref.osd_order))]</expression>
-	<expression name="DhOsdSlotVis_9">[[$EXP[DhOsdIs_9_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_9_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_9_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_9_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_9_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_9_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_9_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_9_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_9_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_9_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_9_pip">[String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_9),pip) | String.IsEmpty(Window(Home).Property(dhs.pref.osd_order))]</expression>
+	<expression name="DhOsdSlotVis_9">[[$EXP[DhOsdIs_9_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_9_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_9_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_9_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_9_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_9_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_9_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_9_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_9_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_9_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_9_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_9">[[$EXP[DhOsdIs_9_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_9_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<expression name="DhOsdIs_10_sources">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_10),sources)</expression>
 	<expression name="DhOsdIs_10_episodes">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_10),episodes)</expression>
@@ -14502,7 +14512,8 @@
 	<expression name="DhOsdIs_10_external">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_10),external)</expression>
 	<expression name="DhOsdIs_10_video">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_10),video)</expression>
 	<expression name="DhOsdIs_10_ppi">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_10),ppi)</expression>
-	<expression name="DhOsdSlotVis_10">[[$EXP[DhOsdIs_10_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_10_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_10_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_10_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_10_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_10_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_10_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_10_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_10_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_10_ppi] + $EXP[DhOsdOk_ppi]]]</expression>
+	<expression name="DhOsdIs_10_pip">String.IsEqual(Window(Home).Property(dhs.pref.osd_slot_10),pip)</expression>
+	<expression name="DhOsdSlotVis_10">[[$EXP[DhOsdIs_10_sources] + $EXP[DhOsdOk_sources]] | [$EXP[DhOsdIs_10_episodes] + $EXP[DhOsdOk_episodes]] | [$EXP[DhOsdIs_10_info] + $EXP[DhOsdOk_info]] | [$EXP[DhOsdIs_10_audio] + $EXP[DhOsdOk_audio]] | [$EXP[DhOsdIs_10_subtitles] + $EXP[DhOsdOk_subtitles]] | [$EXP[DhOsdIs_10_subsync] + $EXP[DhOsdOk_subsync]] | [$EXP[DhOsdIs_10_nextsub] + $EXP[DhOsdOk_nextsub]] | [$EXP[DhOsdIs_10_external] + $EXP[DhOsdOk_external]] | [$EXP[DhOsdIs_10_video] + $EXP[DhOsdOk_video]] | [$EXP[DhOsdIs_10_ppi] + $EXP[DhOsdOk_ppi]] | [$EXP[DhOsdIs_10_pip] + $EXP[DhOsdOk_pip]]]</expression>
 	<expression name="DhOsdSlotRaise_10">[[$EXP[DhOsdIs_10_audio] + !String.IsEmpty(VideoPlayer.AudioLanguage)] | [$EXP[DhOsdIs_10_subtitles] + VideoPlayer.SubtitlesEnabled + !String.IsEmpty(VideoPlayer.SubtitlesLanguage)]]</expression>
 	<variable name="DhOsdSlotIcon_1">
 		<value condition="$EXP[DhOsdIs_1_sources]">dexhub/osd/legacy/layers.png</value>
@@ -14515,6 +14526,7 @@
 		<value condition="$EXP[DhOsdIs_1_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_1_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_1_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_1_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_1">
 		<value condition="$EXP[DhOsdIs_1_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14532,6 +14544,7 @@
 		<value condition="$EXP[DhOsdIs_2_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_2_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_2_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_2_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_2">
 		<value condition="$EXP[DhOsdIs_2_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14549,6 +14562,7 @@
 		<value condition="$EXP[DhOsdIs_3_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_3_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_3_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_3_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_3">
 		<value condition="$EXP[DhOsdIs_3_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14566,6 +14580,7 @@
 		<value condition="$EXP[DhOsdIs_4_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_4_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_4_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_4_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_4">
 		<value condition="$EXP[DhOsdIs_4_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14583,6 +14598,7 @@
 		<value condition="$EXP[DhOsdIs_5_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_5_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_5_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_5_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_5">
 		<value condition="$EXP[DhOsdIs_5_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14600,6 +14616,7 @@
 		<value condition="$EXP[DhOsdIs_6_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_6_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_6_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_6_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_6">
 		<value condition="$EXP[DhOsdIs_6_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14617,6 +14634,7 @@
 		<value condition="$EXP[DhOsdIs_7_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_7_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_7_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_7_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_7">
 		<value condition="$EXP[DhOsdIs_7_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14634,6 +14652,7 @@
 		<value condition="$EXP[DhOsdIs_8_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_8_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_8_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_8_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_8">
 		<value condition="$EXP[DhOsdIs_8_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14651,6 +14670,7 @@
 		<value condition="$EXP[DhOsdIs_9_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_9_video]">dexhub/osd/legacy/ratio.png</value>
 		<value condition="$EXP[DhOsdIs_9_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_9_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_9">
 		<value condition="$EXP[DhOsdIs_9_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -14668,6 +14688,7 @@
 		<value condition="$EXP[DhOsdIs_10_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_10_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_10_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_10_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotLabel_10">
 		<value condition="$EXP[DhOsdIs_10_audio]">$INFO[VideoPlayer.AudioLanguage,[UPPERCASE],[/UPPERCASE]]</value>
@@ -15106,6 +15127,54 @@
 		<value condition="$EXP[DhOsdIs_10_ppi] + $EXP[DhOsdSlotVis_1]">6501</value>
 		<value>6004</value>
 	</variable>
+	<variable name="DhOsdPrev_pip">
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_10_pip] + $EXP[DhOsdSlotVis_1]">6501</value>
+		<value>6004</value>
+	</variable>
 	<variable name="DhOsdNext_ppi">
 		<value condition="$EXP[DhOsdIs_1_ppi] + $EXP[DhOsdSlotVis_2]">6502</value>
 		<value condition="$EXP[DhOsdIs_1_ppi] + $EXP[DhOsdSlotVis_3]">6503</value>
@@ -15152,6 +15221,54 @@
 		<value condition="$EXP[DhOsdIs_8_ppi] + $EXP[DhOsdSlotVis_9]">6509</value>
 		<value condition="$EXP[DhOsdIs_8_ppi] + $EXP[DhOsdSlotVis_10]">6510</value>
 		<value condition="$EXP[DhOsdIs_9_ppi] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value>6001</value>
+	</variable>
+	<variable name="DhOsdNext_pip">
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_2]">6502</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_1_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_3]">6503</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_2_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_4]">6504</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_3_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_5]">6505</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_4_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_6]">6506</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_5_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_7]">6507</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_6_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_8]">6508</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_7_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_9]">6509</value>
+		<value condition="$EXP[DhOsdIs_8_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
+		<value condition="$EXP[DhOsdIs_9_pip] + $EXP[DhOsdSlotVis_10]">6510</value>
 		<value>6001</value>
 	</variable>
 	<!-- v5.10.298: the player bar's look (osd_look.py); the old colours without it -->
@@ -15253,6 +15370,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6501) + $EXP[DhOsdIs_1_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6501) + $EXP[DhOsdIs_1_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6501) + $EXP[DhOsdIs_1_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6501) + $EXP[DhOsdIs_1_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6501) + $EXP[DhOsdIs_1_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15266,6 +15384,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6502) + $EXP[DhOsdIs_2_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6502) + $EXP[DhOsdIs_2_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6502) + $EXP[DhOsdIs_2_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6502) + $EXP[DhOsdIs_2_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6502) + $EXP[DhOsdIs_2_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15279,6 +15398,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6503) + $EXP[DhOsdIs_3_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6503) + $EXP[DhOsdIs_3_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6503) + $EXP[DhOsdIs_3_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6503) + $EXP[DhOsdIs_3_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6503) + $EXP[DhOsdIs_3_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15292,6 +15412,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6504) + $EXP[DhOsdIs_4_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6504) + $EXP[DhOsdIs_4_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6504) + $EXP[DhOsdIs_4_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6504) + $EXP[DhOsdIs_4_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6504) + $EXP[DhOsdIs_4_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15305,6 +15426,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6505) + $EXP[DhOsdIs_5_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6505) + $EXP[DhOsdIs_5_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6505) + $EXP[DhOsdIs_5_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6505) + $EXP[DhOsdIs_5_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6505) + $EXP[DhOsdIs_5_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15318,6 +15440,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6506) + $EXP[DhOsdIs_6_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6506) + $EXP[DhOsdIs_6_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6506) + $EXP[DhOsdIs_6_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6506) + $EXP[DhOsdIs_6_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6506) + $EXP[DhOsdIs_6_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15331,6 +15454,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6507) + $EXP[DhOsdIs_7_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6507) + $EXP[DhOsdIs_7_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6507) + $EXP[DhOsdIs_7_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6507) + $EXP[DhOsdIs_7_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6507) + $EXP[DhOsdIs_7_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15344,6 +15468,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6508) + $EXP[DhOsdIs_8_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6508) + $EXP[DhOsdIs_8_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6508) + $EXP[DhOsdIs_8_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6508) + $EXP[DhOsdIs_8_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6508) + $EXP[DhOsdIs_8_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15357,6 +15482,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6509) + $EXP[DhOsdIs_9_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6509) + $EXP[DhOsdIs_9_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6509) + $EXP[DhOsdIs_9_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6509) + $EXP[DhOsdIs_9_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6509) + $EXP[DhOsdIs_9_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15370,6 +15496,7 @@
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6510) + $EXP[DhOsdIs_10_nextsub]">$LOCALIZE[31935]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6510) + $EXP[DhOsdIs_10_video]">$LOCALIZE[31936]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6510) + $EXP[DhOsdIs_10_ppi]">$LOCALIZE[31937]         </value>
+		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6510) + $EXP[DhOsdIs_10_pip]">$LOCALIZE[32151]         </value>
 		<value condition="!String.IsEqual(Window(Home).Property(dhs.pref.player_osd_names),false) + Control.HasFocus(6510) + $EXP[DhOsdIs_10_external]">$LOCALIZE[31938]         </value>
 		<value />
 	</variable>
@@ -15504,6 +15631,7 @@
 		<value condition="$EXP[DhOsdIs_1_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_1_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_1_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_1_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_2">
 		<value condition="$EXP[DhOsdIs_2_sources]">af3/extras/icons/network.png</value>
@@ -15516,6 +15644,7 @@
 		<value condition="$EXP[DhOsdIs_2_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_2_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_2_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_2_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_3">
 		<value condition="$EXP[DhOsdIs_3_sources]">af3/extras/icons/network.png</value>
@@ -15528,6 +15657,7 @@
 		<value condition="$EXP[DhOsdIs_3_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_3_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_3_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_3_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_4">
 		<value condition="$EXP[DhOsdIs_4_sources]">af3/extras/icons/network.png</value>
@@ -15540,6 +15670,7 @@
 		<value condition="$EXP[DhOsdIs_4_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_4_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_4_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_4_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_5">
 		<value condition="$EXP[DhOsdIs_5_sources]">af3/extras/icons/network.png</value>
@@ -15552,6 +15683,7 @@
 		<value condition="$EXP[DhOsdIs_5_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_5_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_5_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_5_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_6">
 		<value condition="$EXP[DhOsdIs_6_sources]">af3/extras/icons/network.png</value>
@@ -15564,6 +15696,7 @@
 		<value condition="$EXP[DhOsdIs_6_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_6_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_6_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_6_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_7">
 		<value condition="$EXP[DhOsdIs_7_sources]">af3/extras/icons/network.png</value>
@@ -15576,6 +15709,7 @@
 		<value condition="$EXP[DhOsdIs_7_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_7_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_7_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_7_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_8">
 		<value condition="$EXP[DhOsdIs_8_sources]">af3/extras/icons/network.png</value>
@@ -15588,6 +15722,7 @@
 		<value condition="$EXP[DhOsdIs_8_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_8_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_8_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_8_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_9">
 		<value condition="$EXP[DhOsdIs_9_sources]">af3/extras/icons/network.png</value>
@@ -15600,6 +15735,7 @@
 		<value condition="$EXP[DhOsdIs_9_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_9_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_9_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_9_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<variable name="DhOsdSlotIconClassic_10">
 		<value condition="$EXP[DhOsdIs_10_sources]">af3/extras/icons/network.png</value>
@@ -15612,6 +15748,7 @@
 		<value condition="$EXP[DhOsdIs_10_external]">dexhub/external-player.png</value>
 		<value condition="$EXP[DhOsdIs_10_video]">af3/extras/icons/video.png</value>
 		<value condition="$EXP[DhOsdIs_10_ppi]">af3/extras/icons/ppi.png</value>
+		<value condition="$EXP[DhOsdIs_10_pip]">dexhub/osd/pip.png</value>
 	</variable>
 	<include name="DhOsdSlotsClassic">
 		<control type="button" id="6501">
@@ -15642,6 +15779,7 @@
 			<onfocus condition="$EXP[DhOsdIs_1_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_1_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_1_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_1_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_episodes]">ActivateWindow(1140)</onclick>
@@ -15653,6 +15791,7 @@
 			<onclick condition="$EXP[DhOsdIs_1_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_1_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -15712,6 +15851,7 @@
 			<onfocus condition="$EXP[DhOsdIs_2_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_2_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_2_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_2_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_episodes]">ActivateWindow(1140)</onclick>
@@ -15723,6 +15863,7 @@
 			<onclick condition="$EXP[DhOsdIs_2_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_2_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -15782,6 +15923,7 @@
 			<onfocus condition="$EXP[DhOsdIs_3_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_3_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_3_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_3_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_episodes]">ActivateWindow(1140)</onclick>
@@ -15793,6 +15935,7 @@
 			<onclick condition="$EXP[DhOsdIs_3_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_3_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -15852,6 +15995,7 @@
 			<onfocus condition="$EXP[DhOsdIs_4_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_4_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_4_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_4_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_episodes]">ActivateWindow(1140)</onclick>
@@ -15863,6 +16007,7 @@
 			<onclick condition="$EXP[DhOsdIs_4_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_4_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -15922,6 +16067,7 @@
 			<onfocus condition="$EXP[DhOsdIs_5_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_5_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_5_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_5_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_episodes]">ActivateWindow(1140)</onclick>
@@ -15933,6 +16079,7 @@
 			<onclick condition="$EXP[DhOsdIs_5_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_5_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -15992,6 +16139,7 @@
 			<onfocus condition="$EXP[DhOsdIs_6_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_6_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_6_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_6_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_episodes]">ActivateWindow(1140)</onclick>
@@ -16003,6 +16151,7 @@
 			<onclick condition="$EXP[DhOsdIs_6_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_6_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16062,6 +16211,7 @@
 			<onfocus condition="$EXP[DhOsdIs_7_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_7_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_7_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_7_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_episodes]">ActivateWindow(1140)</onclick>
@@ -16073,6 +16223,7 @@
 			<onclick condition="$EXP[DhOsdIs_7_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_7_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16132,6 +16283,7 @@
 			<onfocus condition="$EXP[DhOsdIs_8_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_8_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_8_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_8_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_episodes]">ActivateWindow(1140)</onclick>
@@ -16143,6 +16295,7 @@
 			<onclick condition="$EXP[DhOsdIs_8_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_8_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16202,6 +16355,7 @@
 			<onfocus condition="$EXP[DhOsdIs_9_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_9_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_9_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_9_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_episodes]">ActivateWindow(1140)</onclick>
@@ -16213,6 +16367,7 @@
 			<onclick condition="$EXP[DhOsdIs_9_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_9_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16272,6 +16427,7 @@
 			<onfocus condition="$EXP[DhOsdIs_10_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_10_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_10_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_10_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_episodes]">ActivateWindow(1140)</onclick>
@@ -16283,6 +16439,7 @@
 			<onclick condition="$EXP[DhOsdIs_10_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_10_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16343,6 +16500,7 @@
 			<onfocus condition="$EXP[DhOsdIs_1_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_1_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_1_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_1_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_episodes]">ActivateWindow(1140)</onclick>
@@ -16354,6 +16512,7 @@
 			<onclick condition="$EXP[DhOsdIs_1_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_1_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_1_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16410,6 +16569,7 @@
 			<onfocus condition="$EXP[DhOsdIs_2_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_2_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_2_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_2_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_episodes]">ActivateWindow(1140)</onclick>
@@ -16421,6 +16581,7 @@
 			<onclick condition="$EXP[DhOsdIs_2_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_2_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_2_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16477,6 +16638,7 @@
 			<onfocus condition="$EXP[DhOsdIs_3_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_3_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_3_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_3_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_episodes]">ActivateWindow(1140)</onclick>
@@ -16488,6 +16650,7 @@
 			<onclick condition="$EXP[DhOsdIs_3_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_3_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_3_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16544,6 +16707,7 @@
 			<onfocus condition="$EXP[DhOsdIs_4_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_4_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_4_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_4_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_episodes]">ActivateWindow(1140)</onclick>
@@ -16555,6 +16719,7 @@
 			<onclick condition="$EXP[DhOsdIs_4_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_4_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_4_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16611,6 +16776,7 @@
 			<onfocus condition="$EXP[DhOsdIs_5_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_5_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_5_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_5_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_episodes]">ActivateWindow(1140)</onclick>
@@ -16622,6 +16788,7 @@
 			<onclick condition="$EXP[DhOsdIs_5_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_5_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_5_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16678,6 +16845,7 @@
 			<onfocus condition="$EXP[DhOsdIs_6_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_6_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_6_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_6_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_episodes]">ActivateWindow(1140)</onclick>
@@ -16689,6 +16857,7 @@
 			<onclick condition="$EXP[DhOsdIs_6_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_6_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_6_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16745,6 +16914,7 @@
 			<onfocus condition="$EXP[DhOsdIs_7_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_7_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_7_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_7_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_episodes]">ActivateWindow(1140)</onclick>
@@ -16756,6 +16926,7 @@
 			<onclick condition="$EXP[DhOsdIs_7_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_7_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_7_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16812,6 +16983,7 @@
 			<onfocus condition="$EXP[DhOsdIs_8_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_8_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_8_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_8_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_episodes]">ActivateWindow(1140)</onclick>
@@ -16823,6 +16995,7 @@
 			<onclick condition="$EXP[DhOsdIs_8_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_8_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_8_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16879,6 +17052,7 @@
 			<onfocus condition="$EXP[DhOsdIs_9_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_9_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_9_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_9_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_episodes]">ActivateWindow(1140)</onclick>
@@ -16890,6 +17064,7 @@
 			<onclick condition="$EXP[DhOsdIs_9_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_9_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_9_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
@@ -16946,6 +17121,7 @@
 			<onfocus condition="$EXP[DhOsdIs_10_video]">ActivateWindow(1148)</onfocus>
 			<onup condition="$EXP[DhOsdIs_10_video]">ActivateWindow(1148)</onup>
 			<onup condition="$EXP[DhOsdIs_10_ppi]">noop</onup>
+			<onup condition="$EXP[DhOsdIs_10_pip]">noop</onup>
 			<onclick>CancelAlarm(osd_timeout,true)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_sources]">ActivateWindow(1149)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_episodes]">ActivateWindow(1140)</onclick>
@@ -16957,6 +17133,7 @@
 			<onclick condition="$EXP[DhOsdIs_10_external]">RunScript(script.dexhub.tvos.players,external)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_video]">ActivateWindow(osdvideosettings)</onclick>
 			<onclick condition="$EXP[DhOsdIs_10_ppi]">RunScript(script.tinyppi,dialog)</onclick>
+			<onclick condition="$EXP[DhOsdIs_10_pip]">DexHub.PictureInPicture</onclick>
 			<selectedcolor>af3_main_fg_70</selectedcolor>
 			<disabledcolor>af3_main_fg_30</disabledcolor>
 			<pulseonselect>false</pulseonselect>
