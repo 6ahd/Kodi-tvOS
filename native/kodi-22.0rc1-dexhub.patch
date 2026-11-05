@@ -598,6 +598,86 @@ index d41892b..4178b06 100644
    // If we're rendering from a different thread, then we should wait for the main
    // app thread to finish AllocResources(), as dynamic resources (images in particular)
    // will try and be allocated from 2 different threads, which causes nasty things
+diff --git a/xbmc/guilib/listproviders/DirectoryProvider.cpp b/xbmc/guilib/listproviders/DirectoryProvider.cpp
+index 2379873..b6df84d 100644
+--- a/xbmc/guilib/listproviders/DirectoryProvider.cpp
++++ b/xbmc/guilib/listproviders/DirectoryProvider.cpp
+@@ -46,6 +46,7 @@
+ #include "video/guilib/VideoSelectActionProcessor.h"
+ 
+ #include <atomic>
++#include <list>
+ #include <memory>
+ #include <mutex>
+ #include <utility>
+@@ -56,6 +57,49 @@ using namespace KODI::MESSAGING;
+ using namespace KODI::UTILS::GUILIB;
+ using namespace PVR;
+ 
++namespace
++{
++// DexHub 22.16: a Dex Hub Home row's listing kept in memory. Kodi asks again
++// for every row whose path changes, so each Home section change ran Dex Hub's
++// Python once a row (0.3-0.5 s each on a box) for rows that had not changed.
++// The row's path carries its version (&v=), which Dex Hub bumps whenever the
++// row's content changes, so a kept listing is never stale.
++constexpr size_t DEXHUB_ROWS_KEPT = 200;
++std::mutex g_dexRowsLock;
++std::list<std::pair<std::string, std::shared_ptr<CFileItemList>>> g_dexRows;
++
++bool IsDexHubRow(const std::string& url)
++{
++  return StringUtils::StartsWith(url, "plugin://plugin.video.dexhub") &&
++         url.find("action=skin_row") != std::string::npos && url.find("&v=") != std::string::npos;
++}
++
++bool DexHubRowKept(const std::string& url, CFileItemList& items)
++{
++  std::lock_guard lock(g_dexRowsLock);
++  for (auto it = g_dexRows.begin(); it != g_dexRows.end(); ++it)
++  {
++    if (it->first != url)
++      continue;
++    items.Copy(*it->second);
++    g_dexRows.splice(g_dexRows.begin(), g_dexRows, it);
++    return true;
++  }
++  return false;
++}
++
++void KeepDexHubRow(const std::string& url, const CFileItemList& items)
++{
++  auto kept = std::make_shared<CFileItemList>();
++  kept->Copy(items);
++  std::lock_guard lock(g_dexRowsLock);
++  g_dexRows.remove_if([&url](const auto& entry) { return entry.first == url; });
++  g_dexRows.emplace_front(url, std::move(kept));
++  while (g_dexRows.size() > DEXHUB_ROWS_KEPT)
++    g_dexRows.pop_back();
++}
++} // namespace
++
+ class CDirectoryProvider::CSubscriber : public ANNOUNCEMENT::IAnnouncer
+ {
+ public:
+@@ -257,7 +301,16 @@ public:
+   bool DoWork() override
+   {
+     CFileItemList items;
+-    if (CDirectory::GetDirectory(m_url, items, "", DIR_FLAG_DEFAULTS))
++    const bool dexRow = IsDexHubRow(m_url);
++    bool listed = dexRow && DexHubRowKept(m_url, items);
++    if (!listed)
++    {
++      listed = CDirectory::GetDirectory(m_url, items, "", DIR_FLAG_DEFAULTS);
++      // an empty answer is not kept: the row may still be on its way
++      if (listed && dexRow && !items.IsEmpty())
++        KeepDexHubRow(m_url, items);
++    }
++    if (listed)
+     {
+       // sort the items if necessary
+       if (m_sort.sortBy != SortBy::NONE)
 diff --git a/xbmc/interfaces/builtins/AddonBuiltins.cpp b/xbmc/interfaces/builtins/AddonBuiltins.cpp
 index 58d3b5b..9c2dc5c 100644
 --- a/xbmc/interfaces/builtins/AddonBuiltins.cpp
@@ -660,22 +740,23 @@ index 58d3b5b..9c2dc5c 100644
             {"installfromzip",             { "Open the install from zip dialog", 0, InstallFromZip}},
             {"runaddon",                   {"Run the specified plugin/script", 1, RunAddon}},
 diff --git a/xbmc/interfaces/builtins/SystemBuiltins.cpp b/xbmc/interfaces/builtins/SystemBuiltins.cpp
-index a18e3a3..73dc6e6 100644
+index a18e3a3..9003609 100644
 --- a/xbmc/interfaces/builtins/SystemBuiltins.cpp
 +++ b/xbmc/interfaces/builtins/SystemBuiltins.cpp
-@@ -12,6 +12,11 @@
+@@ -12,6 +12,12 @@
  #include "messaging/ApplicationMessenger.h"
  #include "utils/StringUtils.h"
  
 +#if defined(TARGET_DARWIN_TVOS)
 +#include "platform/darwin/tvos/TVOSExternalApp.h"
 +#include "platform/darwin/tvos/TVOSTopShelf.h"
++#include "platform/darwin/tvos/TVOSAetherPlayer.h"
 +#endif
 +
  /*! \brief Execute a system executable.
   *  \param params The parameters.
   *  \details params[0] = The path to the executable.
-@@ -251,6 +256,31 @@ static int Suspend(const std::vector<std::string>& params)
+@@ -251,6 +257,43 @@ static int Suspend(const std::vector<std::string>& params)
  /// \table_end
  ///
  
@@ -704,10 +785,22 @@ index a18e3a3..73dc6e6 100644
 +#endif
 +}
 +
++/*! \brief DexHub 22.16: Picture in Picture for the Aether video that is playing
++ *  (the player bar's PiP button). Nothing happens without an Aether session.
++ */
++static int DexHubPictureInPicture(const std::vector<std::string>& params)
++{
++#if defined(TARGET_DARWIN_TVOS)
++  return DexAetherTogglePictureInPicture() ? 0 : -1;
++#else
++  return -1;
++#endif
++}
++
  CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
  {
    return {{"activatescreensaver", {"Activate Screensaver", 0, ActivateScreensaver}},
-@@ -269,5 +299,8 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
+@@ -269,5 +312,9 @@ CBuiltins::CommandMap CSystemBuiltins::GetOperations() const
            {"suspend", {"Suspends the system", 0, Suspend}},
            {"system.exec", {"Execute shell commands", 1, Exec<0>}},
            {"system.execwait",
@@ -715,7 +808,8 @@ index a18e3a3..73dc6e6 100644
 +           {"Execute shell commands and freezes Kodi until shell is closed", 1, Exec<1>}},
 +          {"system.openurl",
 +           {"Open an external app via its URL scheme, e.g. infuse://...", 1, OpenURL}},
-+          {"topshelf.set", {"Rows for the Apple TV Top Shelf, from a JSON file", 1, TopShelfSet}}};
++          {"topshelf.set", {"Rows for the Apple TV Top Shelf, from a JSON file", 1, TopShelfSet}},
++          {"dexhub.pictureinpicture", {"Toggle Picture in Picture", 0, DexHubPictureInPicture}}};
  }
 diff --git a/xbmc/interfaces/legacy/Control.cpp b/xbmc/interfaces/legacy/Control.cpp
 index 21c6ebf..0c5b841 100644
@@ -766,7 +860,7 @@ index 5a7af7e..26043ec 100644
              TVOSNSUserDefaults.h
              TVOSSettingsHandler.h
 diff --git a/xbmc/platform/darwin/tvos/Info.plist.in b/xbmc/platform/darwin/tvos/Info.plist.in
-index 80406e8..5065575 100644
+index 80406e8..e3dd471 100644
 --- a/xbmc/platform/darwin/tvos/Info.plist.in
 +++ b/xbmc/platform/darwin/tvos/Info.plist.in
 @@ -5,7 +5,7 @@
@@ -815,7 +909,18 @@ index 80406e8..5065575 100644
  	</array>
  	<key>CFBundleVersion</key>
  	<string>@APP_SCMID@</string>
-@@ -47,5 +57,24 @@
+@@ -40,6 +50,10 @@
+ 		<key>NSAllowsArbitraryLoads</key>
+ 		<true/>
+ 	</dict>
++	<key>UIBackgroundModes</key>
++	<array>
++		<string>audio</string>
++	</array>
+ 	<key>UIFileSharingEnabled</key>
+ 	<string>YES</string>
+ 	<key>UIRequiredDeviceCapabilities</key>
+@@ -47,5 +61,24 @@
  		<string>arm64</string>
  		<string>opengles-3</string>
  	</array>
@@ -842,10 +947,10 @@ index 80406e8..5065575 100644
  </plist>
 diff --git a/xbmc/platform/darwin/tvos/TVOSAetherPlayer.h b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.h
 new file mode 100644
-index 0000000..bf47afd
+index 0000000..a9c8e7c
 --- /dev/null
 +++ b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.h
-@@ -0,0 +1,73 @@
+@@ -0,0 +1,82 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#pragma once
 +
@@ -859,6 +964,9 @@ index 0000000..bf47afd
 +// DexHub v21: bumps when the Kodi layer above Aether must redraw (subtitle text,
 +// video size or start). The GUI stays idle otherwise.
 +unsigned int DexAetherRedrawRevision();
++// DexHub v21.43: Picture in Picture for the Aether session that is playing.
++// Returns false when the bridge is not loaded (no Aether playback).
++bool DexAetherTogglePictureInPicture();
 +
 +class CTVOSAetherPlayer final : public IPlayer, private CThread
 +{
@@ -903,6 +1011,11 @@ index 0000000..bf47afd
 +  bool IsRenderingVideo() const override;
 +  bool HasVisibleOverlay() const override;
 +  bool IsCaching() const override;
++  int GetChapterCount() const override;
++  int GetChapter() const override;
++  void GetChapterName(std::string& name, int chapterIdx = -1) const override;
++  int64_t GetChapterPos(int chapterIdx = -1) const override;
++  int SeekChapter(int chapter) override;
 +  void SetSubtitleVerticalPosition(int value, bool save) override;
 +  void GetAudioCapabilities(std::vector<IPlayerAudioCaps>& caps) const override;
 +  void GetSubtitleCapabilities(std::vector<IPlayerSubtitleCaps>& caps) const override;
@@ -914,6 +1027,7 @@ index 0000000..bf47afd
 +  void Command(const std::string& name, double value = 0, const std::string& text = "");
 +  struct State;
 +  static std::string ActiveText(const State& state);
++  static int ChapterAt(const State& state);
 +  std::unique_ptr<State> m_state;
 +  mutable std::mutex m_lock;
 +  std::atomic<bool> m_playing{false};
@@ -921,10 +1035,10 @@ index 0000000..bf47afd
 +};
 diff --git a/xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm
 new file mode 100644
-index 0000000..324f8b4
+index 0000000..1380429
 --- /dev/null
 +++ b/xbmc/platform/darwin/tvos/TVOSAetherPlayer.mm
-@@ -0,0 +1,683 @@
+@@ -0,0 +1,787 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +#include "TVOSAetherPlayer.h"
 +
@@ -936,6 +1050,9 @@ index 0000000..324f8b4
 +#include "cores/DataCacheCore.h"
 +#include "cores/VideoPlayer/DVDSubtitles/SubtitlesAdapter.h"
 +#include "cores/VideoPlayer/VideoRenderers/OverlayRenderer.h"
++#include "guilib/GUIComponent.h"
++#include "guilib/GUIWindowManager.h"
++#include "guilib/WindowIDs.h"
 +#include "filesystem/SpecialProtocol.h"
 +#include "messaging/ApplicationMessenger.h"
 +#include "platform/darwin/tvos/filesystem/TVOSFileUtils.h"
@@ -956,11 +1073,13 @@ index 0000000..324f8b4
 +
 +#include <algorithm>
 +#include <chrono>
++#include <cmath>
 +
 +@interface NSObject (DexAetherNativeAPI)
 ++ (void)startEmbedded:(NSDictionary*)request inView:(UIView*)parent belowView:(UIView*)overlay;
 ++ (NSDictionary*)snapshotForToken:(NSString*)token;
 ++ (void)command:(NSDictionary*)request;
+++ (NSNumber*)togglePictureInPicture;
 +@end
 +
 +namespace
@@ -1008,6 +1127,11 @@ index 0000000..324f8b4
 +}
 +std::atomic<unsigned int> g_redraw{1};
 +void RequestRedraw() { g_redraw.fetch_add(1, std::memory_order_relaxed); }
++struct Chapter
++{
++  std::string name;
++  double start;
++};
 +int TrackIndex(const std::vector<Track>& tracks, int id)
 +{
 +  for (size_t index = 0; index < tracks.size(); ++index)
@@ -1023,6 +1147,9 @@ index 0000000..324f8b4
 +  std::string token;
 +  std::string status{"loading"}, codec, hdr;
 +  std::vector<Track> audio, subtitles;
++  std::vector<Chapter> chapters;
++  bool pip{false};
++  int pipRestore{0};
 +  std::vector<std::string> externalPaths;
 +  int audioId{-1}, subtitleId{-1}, savedSubtitle{-1}, width{0}, height{0};
 +  int trackRevision{-1};
@@ -1040,6 +1167,29 @@ index 0000000..324f8b4
 +};
 +
 +unsigned int DexAetherRedrawRevision() { return g_redraw.load(std::memory_order_relaxed); }
++
++bool DexAetherTogglePictureInPicture()
++{
++  // Builtins run on Kodi's thread; the bridge and AVKit live on the main thread.
++  // Asynchronous: the main thread may itself be waiting on Kodi (app lifecycle).
++  Class pipBridge = Bridge("Aether", false);
++  if (![pipBridge respondsToSelector:@selector(togglePictureInPicture)])
++    return false;
++  dispatch_async(dispatch_get_main_queue(), ^{
++    [Bridge("Aether", false) togglePictureInPicture];
++  });
++  return true;
++}
++
++int CTVOSAetherPlayer::ChapterAt(const State& state)
++{
++  // 1-based like VideoPlayer; -1 when nothing has started yet.
++  int chapter = -1;
++  for (size_t index = 0; index < state.chapters.size(); ++index)
++    if (state.position + 0.5 >= state.chapters[index].start)
++      chapter = static_cast<int>(index) + 1;
++  return chapter;
++}
 +
 +std::string CTVOSAetherPlayer::ActiveText(const State& state)
 +{
@@ -1090,6 +1240,7 @@ index 0000000..324f8b4
 +    CDataCacheCore::GetInstance().SetGuiRender(true);
 +    CDataCacheCore::GetInstance().SetVideoRender(!state.external);
 +    CDataCacheCore::GetInstance().SetSpeed(1, 1);
++    CDataCacheCore::GetInstance().SetChapters({});
 +    NSMutableDictionary* request = [NSMutableDictionary dictionaryWithDictionary:@{
 +      @"token": NS(state.token), @"url": NS(file.GetDynPath()),
 +      @"position": @(state.position), @"percent": @(options.startpercent),
@@ -1247,7 +1398,7 @@ index 0000000..324f8b4
 +  bool ended = false, failed = false;
 +  while (!m_bStop)
 +  {
-+    bool start = false;
++    bool start = false, leaveFullscreen = false, enterFullscreen = false;
 +    int external = 0; // 1: paused outside Kodi, 2: resumed outside Kodi
 +    @autoreleasepool
 +    {
@@ -1278,6 +1429,16 @@ index 0000000..324f8b4
 +        {
 +          state.audio = Tracks(snapshot[@"audio"]);
 +          state.subtitles = Tracks(snapshot[@"subtitles"]);
++          state.chapters.clear();
++          std::vector<std::pair<std::string, int64_t>> marks;
++          for (NSDictionary* row in snapshot[@"chapters"])
++            if ([row isKindOfClass:[NSDictionary class]])
++            {
++              state.chapters.push_back({String(row[@"name"]), [row[@"start"] doubleValue]});
++              marks.emplace_back(state.chapters.back().name, std::llround(state.chapters.back().start));
++            }
++          // Seek bar marks (Player.Chapters), in seconds as VideoPlayer gives them.
++          CDataCacheCore::GetInstance().SetChapters(marks);
 +          state.trackRevision = revision;
 +          size_t sidecar = 0;
 +          for (auto& track : state.subtitles)
@@ -1324,6 +1485,16 @@ index 0000000..324f8b4
 +          start = state.started = true;
 +          RequestRedraw();
 +        }
++        // v21.43: Picture in Picture. Starting it leaves the full screen video
++        // window (as Apple's player does); the window's restore button brings it back.
++        const bool pip = [snapshot[@"pip"] boolValue];
++        const int pipRestore = [snapshot[@"pipRestore"] intValue];
++        if (pip && !state.pip)
++          leaveFullscreen = true;
++        if (pipRestore != state.pipRestore && state.started)
++          enterFullscreen = true;
++        state.pip = pip;
++        state.pipRestore = pipRestore;
 +        ended = state.status == "ended";
 +        failed = state.status == "error";
 +        if (failed)
@@ -1348,6 +1519,15 @@ index 0000000..324f8b4
 +        CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SWITCHTOFULLSCREEN);
 +      }
 +    }
++    if (leaveFullscreen)
++    {
++      auto* gui = CServiceBroker::GetGUI();
++      if (gui && gui->GetWindowManager().IsWindowActive(WINDOW_FULLSCREEN_VIDEO))
++        CServiceBroker::GetAppMessenger()->PostMsg(TMSG_EXECUTE_BUILT_IN, -1, -1, nullptr,
++                                                   "Action(Back,12005)");
++    }
++    if (enterFullscreen)
++      CServiceBroker::GetAppMessenger()->PostMsg(TMSG_SWITCHTOFULLSCREEN);
 +    if (ended || failed)
 +      break;
 +    if (!m_state->started && std::chrono::steady_clock::now() > deadline)
@@ -1405,7 +1585,17 @@ index 0000000..324f8b4
 +  else m_callback.OnPlayBackResumed();
 +}
 +void CTVOSAetherPlayer::Seek(bool plus, bool large, bool chapter)
-+{ SeekTimeRelative((plus ? 1 : -1) * (large ? 600000 : 10000)); }
++{
++  // v21.43: a large step moves by chapter when the file has chapters (VideoPlayer does the same).
++  int current = -1, count = 0;
++  { std::lock_guard lock(m_lock); count = m_state->chapters.size(); current = ChapterAt(*m_state); }
++  if ((chapter || large) && count > 1)
++  {
++    const int target = plus ? current + 1 : std::max(1, current - 1);
++    if (target <= count) { SeekChapter(target); return; }
++  }
++  SeekTimeRelative((plus ? 1 : -1) * (large ? 600000 : 10000));
++}
 +void CTVOSAetherPlayer::SeekPercentage(float percent)
 +{
 +  double total;
@@ -1528,6 +1718,34 @@ index 0000000..324f8b4
 +{ std::lock_guard lock(m_lock); return m_state->height > 0 ? float(m_state->width) / m_state->height : 1; }
 +bool CTVOSAetherPlayer::IsRenderingVideo() const { return m_playing; }
 +bool CTVOSAetherPlayer::IsCaching() const { std::lock_guard lock(m_lock); return m_state->status == "loading"; }
++int CTVOSAetherPlayer::GetChapterCount() const { std::lock_guard lock(m_lock); return m_state->chapters.size(); }
++int CTVOSAetherPlayer::GetChapter() const { std::lock_guard lock(m_lock); return ChapterAt(*m_state); }
++void CTVOSAetherPlayer::GetChapterName(std::string& name, int chapterIdx) const
++{
++  std::lock_guard lock(m_lock);
++  if (chapterIdx == -1) chapterIdx = ChapterAt(*m_state);
++  if (chapterIdx > 0 && chapterIdx <= int(m_state->chapters.size()))
++    name = m_state->chapters[chapterIdx - 1].name;
++}
++int64_t CTVOSAetherPlayer::GetChapterPos(int chapterIdx) const
++{
++  std::lock_guard lock(m_lock);
++  if (chapterIdx == -1) chapterIdx = ChapterAt(*m_state);
++  if (chapterIdx > 0 && chapterIdx <= int(m_state->chapters.size()))
++    return std::llround(m_state->chapters[chapterIdx - 1].start);  // seconds, as VideoPlayer
++  return -1;
++}
++int CTVOSAetherPlayer::SeekChapter(int chapter)
++{
++  double start;
++  { std::lock_guard lock(m_lock);
++    if (m_state->chapters.empty()) return -1;
++    chapter = std::clamp(chapter, 1, int(m_state->chapters.size()));
++    start = m_state->chapters[chapter - 1].start;
++  }
++  SeekTime(int64_t(start * 1000));
++  return 0;
++}
 +void CTVOSAetherPlayer::GetRects(CRect& source, CRect& dest, CRect& view) const
 +{ std::lock_guard lock(m_lock); source = m_state->source; dest = m_state->dest; view = m_state->view; }
 +bool CTVOSAetherPlayer::HasVisibleOverlay() const
@@ -3205,7 +3423,7 @@ index 441aaa0..ded7ee2 100644
  
  @end
 diff --git a/xbmc/platform/darwin/tvos/XBMCApplication.mm b/xbmc/platform/darwin/tvos/XBMCApplication.mm
-index f0d7152..e2d4f47 100644
+index f0d7152..1da1398 100644
 --- a/xbmc/platform/darwin/tvos/XBMCApplication.mm
 +++ b/xbmc/platform/darwin/tvos/XBMCApplication.mm
 @@ -1,3 +1,4 @@
@@ -3237,7 +3455,7 @@ index f0d7152..e2d4f47 100644
    NSString* action = urlComponents[2];
    if ([action isEqualToString:@"display"] || [action isEqualToString:@"play"])
      CTVOSTopShelf::GetInstance().HandleTopShelfUrl(url.absoluteString.UTF8String, true);
-@@ -112,6 +114,71 @@ - (BOOL)application:(UIApplication*)app
+@@ -112,6 +114,121 @@ - (BOOL)application:(UIApplication*)app
  }
  @end
  
@@ -3246,7 +3464,19 @@ index f0d7152..e2d4f47 100644
 +@interface DexHubSceneDelegate : UIResponder <UIWindowSceneDelegate>
 +@property(nullable, nonatomic, strong) UIWindow* window;
 +@property(nonatomic) BOOL wasBackgrounded;
++// DexHub 22.16: Kodi kept running in the background for a Picture in Picture window.
++@property(nonatomic) BOOL keptForPictureInPicture;
 +@end
++
++static BOOL DexHubPictureInPictureActive()
++{
++  Class bridge = NSClassFromString(@"DexAetherBridge");
++  SEL state = NSSelectorFromString(@"pictureInPictureState");
++  if (![bridge respondsToSelector:state])
++    return NO;
++  NSNumber* (*call)(id, SEL) = (NSNumber * (*)(id, SEL))[bridge methodForSelector:state];
++  return [call(bridge, state) boolValue];
++}
 +
 +@implementation DexHubSceneDelegate
 +
@@ -3284,7 +3514,35 @@ index f0d7152..e2d4f47 100644
 +  self.wasBackgrounded = YES;
 +  XBMCController* controller = (XBMCController*)self.window.rootViewController;
 +  [controller pauseAnimation];
++  // Kodi's background path stops playback (power manager sleep). While the video
++  // floats in Picture in Picture the player has to keep running, so only the GUI
++  // pauses. Closing the window later finishes the usual background path.
++  if (DexHubPictureInPictureActive())
++  {
++    self.keptForPictureInPicture = YES;
++    [[NSNotificationCenter defaultCenter] addObserver:self
++                                             selector:@selector(pictureInPictureDidStop:)
++                                                 name:@"DexAetherPictureInPictureDidStop"
++                                               object:nil];
++    return;
++  }
 +  [controller enterBackground];
++}
++
++- (void)pictureInPictureDidStop:(NSNotification*)notification
++{
++  [[NSNotificationCenter defaultCenter] removeObserver:self
++                                                  name:@"DexAetherPictureInPictureDidStop"
++                                                object:nil];
++  if (!self.keptForPictureInPicture)
++    return;
++  self.keptForPictureInPicture = NO;
++  // The restore button brings the app forward first; only a window closed while
++  // the app is still in the background needs the deferred background path.
++  if (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground)
++    [(XBMCController*)self.window.rootViewController enterBackground];
++  else
++    self.wasBackgrounded = NO;
 +}
 +
 +- (void)sceneWillEnterForeground:(UIScene*)scene
@@ -3294,6 +3552,16 @@ index f0d7152..e2d4f47 100644
 +  self.wasBackgrounded = NO;
 +  XBMCController* controller = (XBMCController*)self.window.rootViewController;
 +  [controller resumeAnimation];
++  if (self.keptForPictureInPicture)
++  {
++    // Kodi never went to sleep: nothing to wake, only a Top Shelf request to run.
++    self.keptForPictureInPicture = NO;
++    [[NSNotificationCenter defaultCenter] removeObserver:self
++                                                    name:@"DexAetherPictureInPictureDidStop"
++                                                  object:nil];
++    CTVOSTopShelf::GetInstance().RunTopShelf();
++    return;
++  }
 +  [controller enterForeground];
 +}
 +

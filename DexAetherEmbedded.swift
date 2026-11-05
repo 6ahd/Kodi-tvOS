@@ -3,6 +3,7 @@ import Combine
 import UIKit
 import AVFoundation
 import MediaPlayer
+import AVKit
 import AetherEngine
 
 private final class SnapshotStore: @unchecked Sendable {
@@ -53,6 +54,18 @@ public final class DexAetherBridge: NSObject {
     @objc(snapshotForToken:)
     nonisolated public static func snapshotForToken(_ token: NSString) -> NSDictionary? {
         snapshots.get(token as String)
+    }
+
+    // v21.43: Picture in Picture. Kodi's DexHub.PictureInPicture builtin calls this;
+    // the scene delegate asks pictureInPictureState before it lets Kodi sleep.
+    @objc(togglePictureInPicture)
+    public static func togglePictureInPicture() -> NSNumber {
+        NSNumber(value: session?.togglePictureInPicture() ?? false)
+    }
+
+    @objc(pictureInPictureState)
+    public static func pictureInPictureState() -> NSNumber {
+        NSNumber(value: session?.pictureInPictureActive ?? false)
     }
 
     @objc(command:)
@@ -194,6 +207,13 @@ private final class EmbeddedSession {
     private var cueUpdates: AnyCancellable?
     private var commandTargets: [(MPRemoteCommand, Any)] = []
     private var artworkTask: Task<Void, Never>?
+    private var lastChapters: [ChapterInfo] = []
+    private var chapterRows: [[String: Any]] = []
+    private var pip: AVPictureInPictureController?
+    private var pipDelegate: PictureInPictureDelegate?
+    private var pipWantedUntil: Date?
+    private var pipRestores = 0
+    private(set) var pictureInPictureActive = false
 
     init(request: NSDictionary, parent: UIView, overlay: UIView) throws {
         self.request = request
@@ -414,13 +434,21 @@ private final class EmbeddedSession {
             if let value = cue.text { text.append(["text": value, "start": cue.startTime, "end": cue.endTime]) }
         }
         updateBitmaps(cues)
-        if lastAudio != engine.audioTracks || lastSubtitles != engine.subtitleTracks {
+        if lastAudio != engine.audioTracks || lastSubtitles != engine.subtitleTracks ||
+            lastChapters != engine.mediaChapters {
             lastAudio = engine.audioTracks
             lastSubtitles = engine.subtitleTracks
+            lastChapters = engine.mediaChapters
             audioRows = lastAudio.map(track)
             subtitleRows = lastSubtitles.map(track)
+            // v21.43: container chapters (MKV/MP4) for Kodi's chapter list, seek bar
+            // marks, chapter skip and the credits panel. Same axis as seek(to:).
+            chapterRows = lastChapters.filter { $0.startSeconds.isFinite }.map {
+                ["name": $0.name, "start": max(0, $0.startSeconds)]
+            }
             trackRevision += 1
         }
+        preparePictureInPicture()
         snapshots.set(token, ["state": state, "message": failure ?? "",
             "position": engine.clock.currentTime.isFinite ? engine.clock.currentTime : 0,
             "sourceTime": sourceTime.isFinite ? sourceTime : 0,
@@ -433,7 +461,9 @@ private final class EmbeddedSession {
             "hdr": String(describing: engine.sourceVideoFormat),
             "audioId": engine.activeAudioTrackIndex ?? -1, "subtitleId": engine.activeSubtitleTrackIndex ?? -1,
             "trackRevision": trackRevision,
-            "audio": audioRows, "subtitles": subtitleRows, "cues": text])
+            "audio": audioRows, "subtitles": subtitleRows, "chapters": chapterRows, "cues": text,
+            "pip": pictureInPictureActive, "pipPossible": pip?.isPictureInPicturePossible ?? false,
+            "pipRestore": pipRestores])
     }
 
     private func updateBitmaps(_ cues: [SubtitleCue]) {
@@ -462,9 +492,82 @@ private final class EmbeddedSession {
         }
     }
 
+    // MARK: Picture in Picture (v21.43)
+    // tvOS PiP needs an AVPlayerLayer: only Aether's native path has one. The software
+    // path cannot float on tvOS (AVKit ignores sample-buffer sources, FB9751461).
+    private func preparePictureInPicture() {
+        guard AVPictureInPictureController.isPictureInPictureSupported() else { return }
+        guard let layer = engine.nativePlayerLayer else {
+            if pip != nil && !pictureInPictureActive { pip = nil }
+            return
+        }
+        if pip == nil || pip?.playerLayer !== layer {
+            let delegate = PictureInPictureDelegate(session: self)
+            let controller = AVPictureInPictureController(playerLayer: layer)
+            controller?.delegate = delegate
+            pip = controller
+            pipDelegate = delegate
+        }
+        // A start asked for before AVKit called the window possible.
+        if let until = pipWantedUntil, let pip {
+            if pip.isPictureInPicturePossible {
+                pipWantedUntil = nil
+                pip.startPictureInPicture()
+            } else if Date() > until {
+                pipWantedUntil = nil
+                NSLog("DexAetherBridge: Picture in Picture did not become possible")
+            }
+        }
+    }
+
+    /// Returns whether PiP is (or is about to be) shown after the toggle.
+    func togglePictureInPicture() -> Bool {
+        guard !stopped else { return false }
+        if let pip, pip.isPictureInPictureActive {
+            pip.stopPictureInPicture()
+            return false
+        }
+        preparePictureInPicture()
+        guard let pip else {
+            NSLog("DexAetherBridge: Picture in Picture needs Aether's native path")
+            return false
+        }
+        if pip.isPictureInPicturePossible {
+            pip.startPictureInPicture()
+        } else {
+            pipWantedUntil = Date().addingTimeInterval(3)
+        }
+        return true
+    }
+
+    fileprivate func pictureInPictureChanged(_ active: Bool) {
+        pictureInPictureActive = active
+        // Set before the app leaves the foreground: Aether reads it for the
+        // background teardown decision and the in-place next-episode handover.
+        engine.pictureInPictureActive = active
+        if !active {
+            NotificationCenter.default.post(name: Notification.Name("DexAetherPictureInPictureDidStop"), object: nil)
+        }
+        // The 10 Hz timer publishes it; no publish() here, AVKit may call in from one.
+    }
+
+    fileprivate func pictureInPictureRestore() {
+        pipRestores += 1
+    }
+
     func stop() {
         guard !stopped else { return }
         stopped = true
+        pipWantedUntil = nil
+        if let pip, pip.isPictureInPictureActive { pip.stopPictureInPicture() }
+        if pictureInPictureActive {
+            pictureInPictureActive = false
+            engine.pictureInPictureActive = false
+            NotificationCenter.default.post(name: Notification.Name("DexAetherPictureInPictureDidStop"), object: nil)
+        }
+        pip?.delegate = nil
+        pip = nil
+        pipDelegate = nil
         cueUpdates?.cancel()
         cueUpdates = nil
         artworkTask?.cancel()
@@ -479,5 +582,28 @@ private final class EmbeddedSession {
         overlay?.layer.isOpaque = layerWasOpaque
         overlay?.backgroundColor = backgroundWas
         snapshots.set(token, ["state": "stopped"])
+    }
+}
+
+private final class PictureInPictureDelegate: NSObject, AVPictureInPictureControllerDelegate {
+    private weak var session: EmbeddedSession?
+    init(session: EmbeddedSession) { self.session = session }
+
+    func pictureInPictureControllerWillStartPictureInPicture(_ controller: AVPictureInPictureController) {
+        MainActor.assumeIsolated { session?.pictureInPictureChanged(true) }
+    }
+    func pictureInPictureControllerDidStopPictureInPicture(_ controller: AVPictureInPictureController) {
+        MainActor.assumeIsolated { session?.pictureInPictureChanged(false) }
+    }
+    func pictureInPictureController(_ controller: AVPictureInPictureController,
+                                    failedToStartPictureInPictureWithError error: Error) {
+        NSLog("DexAetherBridge: Picture in Picture failed: %@", error.localizedDescription)
+        MainActor.assumeIsolated { session?.pictureInPictureChanged(false) }
+    }
+    func pictureInPictureController(_ controller: AVPictureInPictureController,
+        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completion: @escaping (Bool) -> Void) {
+        // Kodi brings its full screen video window back when it reads pipRestore.
+        MainActor.assumeIsolated { session?.pictureInPictureRestore() }
+        completion(true)
     }
 }

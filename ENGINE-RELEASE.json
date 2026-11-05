@@ -1,6 +1,6 @@
 {
-  "app_version": "22.15",
-  "bridge_revision": 26,
+  "app_version": "22.16",
+  "bridge_revision": 27,
   "version": "7.56.0",
   "commit": "76ad51a7a0a13d4844c48a90db98d6ca6abcb458",
   "dependencies": {
