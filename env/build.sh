@@ -43,6 +43,18 @@ step "Kodi source: DexHub patch and artwork"
 xcrun swift -module-cache-path "$CLANG_MODULE_CACHE_PATH" "$REPO/branding/render_branding.swift" "$BUILD/branding" >/dev/null
 "$PYTHON" "$REPO/branding/install_branding.py" "$KODI_SRC" "$BUILD/branding"
 
+step "Binary add-ons (inputstream.adaptive)"
+# 22.26: Kodi's binary add-ons are built into $KODI_BUILD/addons, where the
+# app build copies them in; its framework step turns each dylib into a
+# framework that Kodi loads (CDarwinEmbedUtils::GetSharedLibraryPath).
+DEPENDS_TARGET="$KODI_SRC/tools/depends/target"
+[ -f "$DEPENDS_TARGET/Toolchain_binaddons.cmake" ] || cp "$ENV_DIR/depends/appletvos27.0_arm64-target-debug/share/Toolchain_binaddons.cmake" "$DEPENDS_TARGET/"
+[ -f "$DEPENDS_TARGET/config-binaddons.site" ] || cp "$NATIVE/share/config-binaddons.site" "$DEPENDS_TARGET/"
+make -C "$DEPENDS_TARGET/binary-addons" INSTALL_PREFIX="$KODI_BUILD/addons" CROSS_COMPILING=yes \
+  ADDONS="${DEX_BINARY_ADDONS:-inputstream.adaptive}" > "$BUILD/binary-addons.log" 2>&1 \
+  || { tail -20 "$BUILD/binary-addons.log"; echo "Binary add-ons failed: $BUILD/binary-addons.log"; exit 1; }
+ls -d "$KODI_BUILD"/addons/inputstream.adaptive
+
 step "Kodi (Release, appletvos)"
 "$PYTHON" "$REPO/prepare_toolchain.py" "$KODI_SRC" "$KODI_BUILD" "$MINIMUM" >/dev/null
 if [ ! -f "$KODI_BUILD/CMakeCache.txt" ]; then
