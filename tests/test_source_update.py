@@ -3,7 +3,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-# Usage: test_source_update.py CLEAN_KODI_22.0rc1-Piers_CHECKOUT (left clean afterwards)
+# Usage: test_source_update.py CLEAN_KODI_22.0rc2-Piers_CHECKOUT (left clean afterwards)
 base=Path(__file__).resolve().parents[1]
 source=Path(sys.argv[1]).resolve()
 before_diff=subprocess.run(['git','-C',str(source),'diff'],capture_output=True,check=True).stdout
@@ -55,6 +55,6 @@ assert '"topshelf.set"' in (source/'xbmc/interfaces/builtins/SystemBuiltins.cpp'
 shelf=(source/'xbmc/platform/darwin/tvos/TopShelf/ServiceProvider.mm').read_text()
 assert 'TVTopShelfSectionedContent' in shelf and 'playbackProgress' in shelf
 assert 'com.apple.tv-top-shelf' in (source/'xbmc/platform/darwin/tvos/TopShelf/Info.plist.in').read_text()
-subprocess.run(['git','-C',str(source),'apply','--reverse',str(base/'native/kodi-22.0rc1-dexhub.patch')],check=True)
+subprocess.run(['git','-C',str(source),'apply','--reverse',str(base/'native/kodi-22.0rc2-dexhub.patch')],check=True)
 assert subprocess.run(['git','-C',str(source),'diff'],capture_output=True,check=True).stdout==before_diff
 print('PASS: RC1 patch apply/idempotency/reverse; setup before addon scan/services; routing; Back; Now Playing')

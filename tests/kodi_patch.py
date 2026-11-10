@@ -1,7 +1,7 @@
-"""Read native/kodi-22.0rc1-dexhub.patch: the whole text, and new files' contents."""
+"""Read native/kodi-22.0rc2-dexhub.patch: the whole text, and new files' contents."""
 from pathlib import Path
 
-PATCH = Path(__file__).resolve().parents[1] / 'native/kodi-22.0rc1-dexhub.patch'
+PATCH = Path(__file__).resolve().parents[1] / 'native/kodi-22.0rc2-dexhub.patch'
 text = PATCH.read_text()
 
 

@@ -1,8 +1,8 @@
 diff --git a/addons/resource.language.en_gb/resources/strings.po b/addons/resource.language.en_gb/resources/strings.po
-index 14f70f9..dba8300 100644
+index ede07a7..8432b85 100644
 --- a/addons/resource.language.en_gb/resources/strings.po
 +++ b/addons/resource.language.en_gb/resources/strings.po
-@@ -25795,3 +25795,77 @@ msgstr ""
+@@ -25968,3 +25968,77 @@ msgstr ""
  msgctxt "#40804"
  msgid "{0:.1f} dB"
  msgstr ""
@@ -81,21 +81,18 @@ index 14f70f9..dba8300 100644
 +msgid "9.1.6"
 +msgstr ""
 diff --git a/cmake/scripts/darwin_embedded/ArchSetup.cmake b/cmake/scripts/darwin_embedded/ArchSetup.cmake
-index da180e7..ac698cf 100644
+index cb25776..a5dcaf0 100644
 --- a/cmake/scripts/darwin_embedded/ArchSetup.cmake
 +++ b/cmake/scripts/darwin_embedded/ArchSetup.cmake
-@@ -41,6 +41,11 @@ list(APPEND DEPLIBS "-framework CoreFoundation" "-framework CoreVideo"
-                     "-framework VideoToolbox" "-lresolv" "-ObjC"
-                     "-framework AVKit" "-framework GameController")
+@@ -43,6 +43,8 @@ list(APPEND DEPLIBS "-framework CoreFoundation" "-framework CoreVideo"
  
-+# DexHub: the app asks tvOS to reload its Top Shelf (TVTopShelfContentProvider)
-+if(CORE_PLATFORM_NAME_LC STREQUAL tvos)
+ if(CORE_PLATFORM_NAME_LC STREQUAL tvos)
+   list(APPEND DEPLIBS "-framework CoreImage")
++  # DexHub: the app asks tvOS to reload its Top Shelf (TVTopShelfContentProvider)
 +  list(APPEND DEPLIBS "-framework TVServices")
-+endif()
-+
+ endif()
+ 
  # Speech not available on tvOS
- if(NOT CORE_PLATFORM_NAME_LC STREQUAL tvos)
-   list(APPEND DEPLIBS "-framework Speech")
 diff --git a/system/settings/darwin_tvos.xml b/system/settings/darwin_tvos.xml
 index 13e821f..0cd7461 100644
 --- a/system/settings/darwin_tvos.xml
@@ -137,7 +134,7 @@ index 13e821f..0cd7461 100644
          <setting id="videoplayer.hqscalers">
            <visible>false</visible>
 diff --git a/xbmc/ServiceManager.cpp b/xbmc/ServiceManager.cpp
-index ba0c047..25a4073 100644
+index 929a8f2..da6d8e2 100644
 --- a/xbmc/ServiceManager.cpp
 +++ b/xbmc/ServiceManager.cpp
 @@ -7,6 +7,9 @@
@@ -172,10 +169,10 @@ index ba0c047..25a4073 100644
  
    m_extsMimeSupportList = std::make_unique<ADDONS::CExtsMimeSupportList>(*m_addonMgr);
 diff --git a/xbmc/addons/Skin.cpp b/xbmc/addons/Skin.cpp
-index 03875e2..857dfe2 100644
+index c9c893a..864d925 100644
 --- a/xbmc/addons/Skin.cpp
 +++ b/xbmc/addons/Skin.cpp
-@@ -544,10 +544,21 @@ void GetFontsetsFromFile(const std::string& fontsetFilePath,
+@@ -545,10 +545,21 @@ void GetFontsetsFromFile(const std::string& fontsetFilePath,
          const char* idLocAttr = fontsetElement->Attribute("idloc");
          if (idAttr)
          {
@@ -201,7 +198,7 @@ index 03875e2..857dfe2 100644
            if (StringUtils::EqualsNoCase(idAttr, settingValue))
              *currentValueSet = true;
 diff --git a/xbmc/application/Application.cpp b/xbmc/application/Application.cpp
-index 7362719..547f9e6 100644
+index 28b48ff..ce823d1 100644
 --- a/xbmc/application/Application.cpp
 +++ b/xbmc/application/Application.cpp
 @@ -7,6 +7,14 @@
@@ -234,7 +231,7 @@ index 7362719..547f9e6 100644
    CLog::Log(LOGINFO, "Checking resolution {}",
              CDisplaySettings::GetInstance().GetCurrentResolution());
    if (!CServiceBroker::GetWinSystem()->GetGfxContext().IsValidResolution(CDisplaySettings::GetInstance().GetCurrentResolution()))
-@@ -726,6 +741,9 @@ bool CApplication::Initialize()
+@@ -731,6 +746,9 @@ bool CApplication::Initialize()
      }
  
      CServiceBroker::RegisterTextureCache(std::make_shared<CTextureCache>());
@@ -244,7 +241,7 @@ index 7362719..547f9e6 100644
  
      std::string skinId = settings->GetString(CSettings::SETTING_LOOKANDFEEL_SKIN);
      if (!skinHandling->LoadSkin(skinId))
-@@ -827,6 +845,12 @@ bool CApplication::Initialize()
+@@ -832,6 +850,12 @@ bool CApplication::Initialize()
      CServiceBroker::GetGUI()->GetWindowManager().SendThreadMessage(msg);
    }
  
@@ -257,7 +254,7 @@ index 7362719..547f9e6 100644
    return true;
  }
  
-@@ -936,6 +960,12 @@ void CApplication::Render()
+@@ -947,6 +971,12 @@ void CApplication::Render()
      m_lastRenderTime = std::chrono::steady_clock::now();
    }
  
@@ -270,7 +267,7 @@ index 7362719..547f9e6 100644
    if (compositing)
      CServiceBroker::GetWinSystem()->EndGuiComposite();
  
-@@ -972,6 +1002,11 @@ void CApplication::Render()
+@@ -983,6 +1013,11 @@ void CApplication::Render()
    CServiceBroker::GetWinSystem()->GetGfxContext().Flip(hasRendered,
                                                         appPlayer->IsRenderingVideoLayer());
  
@@ -282,7 +279,7 @@ index 7362719..547f9e6 100644
    CTimeUtils::UpdateFrameTime(hasRendered);
  }
  
-@@ -1631,6 +1666,14 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
+@@ -1641,6 +1676,14 @@ void CApplication::FrameMove(bool processEvents, bool processGUI)
          !CServiceBroker::GetGUI()->GetWindowManager().HasDirtyRegions())
        m_skipGuiRender = true;
      CServiceBroker::GetGUI()->GetWindowManager().FrameMove();
@@ -298,7 +295,7 @@ index 7362719..547f9e6 100644
  
    appPlayer->FrameMove();
 diff --git a/xbmc/application/ApplicationPlayer.cpp b/xbmc/application/ApplicationPlayer.cpp
-index 2938369..8201277 100644
+index ddd9ded..2fd1161 100644
 --- a/xbmc/application/ApplicationPlayer.cpp
 +++ b/xbmc/application/ApplicationPlayer.cpp
 @@ -96,6 +96,28 @@ bool CApplicationPlayer::OpenFile(const CFileItem& item, const CPlayerOptions& o
@@ -432,7 +429,7 @@ index 0000000..e1bf4aa
 +}
 +} // namespace DEXHUB
 diff --git a/xbmc/guilib/GUIBaseContainer.cpp b/xbmc/guilib/GUIBaseContainer.cpp
-index 08c32aa..1e5179a 100644
+index 168b869..717acc0 100644
 --- a/xbmc/guilib/GUIBaseContainer.cpp
 +++ b/xbmc/guilib/GUIBaseContainer.cpp
 @@ -8,6 +8,10 @@
@@ -446,7 +443,7 @@ index 08c32aa..1e5179a 100644
  #include "FileItem.h"
  #include "FileItemList.h"
  #include "GUIInfoManager.h"
-@@ -536,8 +540,20 @@ bool CGUIBaseContainer::OnMessage(CGUIMessage& message)
+@@ -542,8 +546,20 @@ bool CGUIBaseContainer::OnMessage(CGUIMessage& message)
      {
        if (message.GetMessage() == GUI_MSG_LABEL_BIND && message.GetPointer())
        { // bind our items
@@ -513,10 +510,10 @@ index ad3cd39..3d6e09e 100644
    CGUIAction m_unfocusActions;
  
 diff --git a/xbmc/guilib/GUIControlFactory.cpp b/xbmc/guilib/GUIControlFactory.cpp
-index 0ae1c69..9f95003 100644
+index 1b75d0b..3070a99 100644
 --- a/xbmc/guilib/GUIControlFactory.cpp
 +++ b/xbmc/guilib/GUIControlFactory.cpp
-@@ -1414,6 +1414,9 @@ CGUIControl* CGUIControlFactory::Create(int parentID,
+@@ -1410,6 +1410,9 @@ CGUIControl* CGUIControlFactory::Create(int parentID,
        bcontrol->SetLabel2(strLabel2);
        bcontrol->SetMinWidth(minWidth);
        bcontrol->SetClickActions(clickActions);
@@ -3578,10 +3575,10 @@ index f0d7152..1da1398 100644
  {
    NSLog(@"We Got a Pipe Signal: %d____________", s);
 diff --git a/xbmc/platform/darwin/tvos/XBMCController.mm b/xbmc/platform/darwin/tvos/XBMCController.mm
-index 1c09a47..08671b2 100644
+index e34b336..95efa7e 100644
 --- a/xbmc/platform/darwin/tvos/XBMCController.mm
 +++ b/xbmc/platform/darwin/tvos/XBMCController.mm
-@@ -91,7 +91,6 @@ - (void)viewDidLoad
+@@ -100,7 +100,6 @@ - (void)viewDidLoad
    self.view.backgroundColor = UIColor.blackColor;
    [self.view addSubview:glView];
  
@@ -3589,7 +3586,7 @@ index 1c09a47..08671b2 100644
    [inputHandler.inputTouch createPanGestureRecognizers];
    [inputHandler.inputTouch createPressGesturecognizers];
    [inputHandler.inputTouch createTapGesturecognizers];
-@@ -115,6 +114,7 @@ - (void)viewDidAppear:(BOOL)animated
+@@ -124,6 +123,7 @@ - (void)viewDidAppear:(BOOL)animated
  
  - (void)viewWillDisappear:(BOOL)animated
  {

@@ -6,7 +6,7 @@
 #
 # The environment (default /Volumes/Backup/DexHub-Env) holds:
 #   depends/    Kodi's prebuilt tvOS dependencies and native tools
-#   kodi-src/   a clean Kodi 22.0rc1-Piers checkout (the patch is applied here)
+#   kodi-src/   a clean Kodi 22.0rc2-Piers checkout (the patch is applied here)
 #   base/       the released IPA whose other add-ons and fonts are carried over
 #   addons/     the Apple TV Dex Hub add-on and skin (tvos/) and the General
 #               zips they match (general/); refreshed from Kodi-General
@@ -32,7 +32,7 @@ step() { printf '\n== %s ==\n' "$1"; }
 
 step "Checks"
 [ -x "$PYTHON" ] || { echo "Kodi depends missing: $ENV_DIR/depends"; exit 1; }
-[ -d "$KODI_SRC/.git" ] || git clone --depth 1 --branch 22.0rc1-Piers https://github.com/xbmc/xbmc.git "$KODI_SRC"
+[ -d "$KODI_SRC/.git" ] || git clone --depth 1 --branch 22.0rc2-Piers https://github.com/xbmc/xbmc.git "$KODI_SRC"
 BASE_IPA="$(ls "$ENV_DIR"/base/*.ipa | head -1)"
 [ -f "$BASE_IPA" ] || { echo "No released IPA in $ENV_DIR/base"; exit 1; }
 [ -f "$KODI_SRC/tools/depends/Makefile.include" ] || cp "$ENV_DIR/depends/Makefile.include.kodi" "$KODI_SRC/tools/depends/Makefile.include"

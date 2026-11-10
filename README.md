@@ -53,7 +53,7 @@ Sign and install the `-fixed.ipa` it writes. Builds from v20 on do this already.
 |---|---|
 | `src/plugin.video.dexhub.tvos` | Dex Hub add-on for Apple TV (5.10.342) |
 | `src/skin.dexhub.tvos` | Dex Hub skin for Apple TV (3.28.79) |
-| `native/kodi-22.0rc1-dexhub.patch`, `apply_kodi_patch.py` | Kodi source changes, as one patch on Kodi 22.0rc1-Piers |
+| `native/kodi-22.0rc2-dexhub.patch`, `apply_kodi_patch.py` | Kodi source changes, as one patch on Kodi 22.0rc2-Piers |
 | `branding/` | DexHub app icon, top shelf, launch image and splash (drawn by a Swift script) |
 | `vendor/` | prebuilt DexNavigationKit.framework (remote navigation) |
 | `repackage_release.py` | new IPA from a released one plus a fresh Kodi and bridge build |
@@ -83,7 +83,7 @@ Everything (Kodi's dependencies, the Kodi checkout, every build product, tempora
 First time on a Mac (downloads Kodi 22 RC1 and builds its dependencies once; this takes a while):
 ```bash
 git clone https://github.com/6ahd/Kodi-tvOS.git ~/Developer/DexHub-tvOS/DexHub-tvOS
-bash ~/Developer/DexHub-tvOS/DexHub-tvOS/update-kodi.sh 22.0rc1-Piers
+bash ~/Developer/DexHub-tvOS/DexHub-tvOS/update-kodi.sh 22.0rc2-Piers
 ```
 Every build after that:
 ```bash
@@ -91,7 +91,7 @@ bash ~/Developer/DexHub-tvOS/DexHub-tvOS/BUILD.command
 ```
 The unsigned IPA lands in Downloads; sign it as above.
 
-The build pins Aether 7.47.0 (commit `a1a70cd`) and its packages, builds the small Swift bridge, applies `native/kodi-22.0rc1-dexhub.patch` to a clean Kodi 22.0rc1-Piers checkout (`apply_kodi_patch.py` refuses any other state), draws and installs the DexHub artwork, builds Kodi in Release, bundles the add-ons in `assets/`, prepares the frameworks for signing and writes the IPA. The Dex Hub add-on and skin are built from their source in `src/` by `release_assets.py` (if `src/` is missing, `get-dexhub.sh` downloads them from the Apple TV repository).
+The build pins Aether 7.47.0 (commit `a1a70cd`) and its packages, builds the small Swift bridge, applies `native/kodi-22.0rc2-dexhub.patch` to a clean Kodi 22.0rc2-Piers checkout (`apply_kodi_patch.py` refuses any other state), draws and installs the DexHub artwork, builds Kodi in Release, bundles the add-ons in `assets/`, prepares the frameworks for signing and writes the IPA. The Dex Hub add-on and skin are built from their source in `src/` by `release_assets.py` (if `src/` is missing, `get-dexhub.sh` downloads them from the Apple TV repository).
 
 ### Licence
 - Build scripts, Kodi changes and the Aether bridge in this repository: **GPL-2.0-or-later**, © 2026 DexWorld.
@@ -145,7 +145,7 @@ bash FIX-SIGNING.command /path/to/file.ipa
 |---|---|
 | `src/plugin.video.dexhub.tvos` | إضافة Dex Hub لـ Apple TV (5.10.342) |
 | `src/skin.dexhub.tvos` | سكين Dex Hub لـ Apple TV (3.28.79) |
-| `native/kodi-22.0rc1-dexhub.patch` و`apply_kodi_patch.py` | تعديلات سورس Kodi، باتش واحد على Kodi 22.0rc1-Piers |
+| `native/kodi-22.0rc2-dexhub.patch` و`apply_kodi_patch.py` | تعديلات سورس Kodi، باتش واحد على Kodi 22.0rc2-Piers |
 | `branding/` | أيقونة Dex Hub وصورة الرف العلوي وشاشة الإطلاق (يرسمها سكربت Swift) |
 | `vendor/` | DexNavigationKit.framework جاهز (تنقل الريموت) |
 | `repackage_release.py` | IPA جديد من إصدار سابق مع بناء Kodi والجسر الجديد |
@@ -161,7 +161,7 @@ bash FIX-SIGNING.command /path/to/file.ipa
 أول مرة على الماك (ينزل Kodi 22 RC1 ويبني اعتمادياته مرة واحدة، ويطول):
 ```bash
 git clone https://github.com/6ahd/Kodi-tvOS.git ~/Developer/DexHub-tvOS/DexHub-tvOS
-bash ~/Developer/DexHub-tvOS/DexHub-tvOS/update-kodi.sh 22.0rc1-Piers
+bash ~/Developer/DexHub-tvOS/DexHub-tvOS/update-kodi.sh 22.0rc2-Piers
 ```
 بعدها أي بناء جديد:
 ```bash
@@ -172,7 +172,7 @@ bash ~/Developer/DexHub-tvOS/DexHub-tvOS/BUILD.command
 ما يسويه البناء:
 1. ينزل محرك Aether 7.47.0 ويثبت إصدارات مكتباته (FFmpegBuild وLibDovi وLibTrueHD وSMBClient).
 2. يبني جسر Swift صغير (`DexAetherEmbedded.swift`) يربط Aether بـ Kodi.
-3. يطبّق `native/kodi-22.0rc1-dexhub.patch` على نسخة Kodi 22.0rc1-Piers نظيفة (`apply_kodi_patch.py` يرفض أي حالة ثانية)، ويرسم أيقونة Dex Hub وشاشة الإطلاق ويركّبها.
+3. يطبّق `native/kodi-22.0rc2-dexhub.patch` على نسخة Kodi 22.0rc2-Piers نظيفة (`apply_kodi_patch.py` يرفض أي حالة ثانية)، ويرسم أيقونة Dex Hub وشاشة الإطلاق ويركّبها.
 4. يبني Kodi بوضع Release، ويضيف الإضافات من `assets/`، ويجهّز المكتبات للتوقيع، ثم يطلع IPA.
 
 إضافة Dex Hub والسكين يتبنون من السورس في `src/` عن طريق `release_assets.py`. لو `src/` مو موجود، ينزلهم `get-dexhub.sh` من Releases.

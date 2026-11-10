@@ -1,13 +1,13 @@
 {
-  "app_version": "22.26",
+  "app_version": "22.27",
   "bridge_revision": 27,
-  "version": "7.56.0",
-  "commit": "76ad51a7a0a13d4844c48a90db98d6ca6abcb458",
+  "version": "7.62.1",
+  "commit": "d879ef83bc401decb5ac8e2b03b5c973c18db5d9",
   "dependencies": {
-    "FFmpegBuild": "3.12.1",
+    "FFmpegBuild": "3.14.0",
     "SMBClient": "0.3.1",
-    "LibDovi": "2.1.0",
-    "LibTrueHD": "3.1.0"
+    "LibDovi": "2.2.0",
+    "LibTrueHD": "3.2.0"
   },
   "traits": [
     "TrueHDObjectAudio",
