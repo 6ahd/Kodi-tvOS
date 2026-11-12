@@ -15,6 +15,7 @@ The app this repository builds combines the parts below. Each keeps its own lice
 | [LibDTSX](https://github.com/superuser404notfound/LibDTSX) 3.0.0 | DTS:X decoding (DTSX.framework, a dynamic framework you can replace) | LGPL-3.0-or-later, the `dca` crate being a port of FFmpeg's LGPL decoder (`licenses/LibDTSX-NOTICE.txt`, `licenses/LibDTSX-LGPL-3.0.txt`; also in the app's `Licenses/LibDTSX`) |
 | [SMBClient](https://github.com/kishikawakatsumi/SMBClient) 0.3.1 | SMB | MIT |
 | TMDb Helper, skinvariables, jurialmunkey module, infotagger (jurialmunkey) | add-ons in `assets/` | GPL-3.0 |
+| Usenet engine of [NuvioTV](https://github.com/NuvioMedia/NuvioTV) ([pull request 4426](https://github.com/NuvioMedia/NuvioTV/pull/4426) by haaihond) | plays Usenet releases: `vendor/NuvioUsenet.framework` (the engine built as a library) and the add-on `script.dexhub.usenet` whose service loads it | GPL-3.0; licences in `script.dexhub.usenet/LICENSE.txt` and `licenses/`, source and build steps in `script.dexhub.usenet/SOURCE.txt` and `source/` |
 | requests, urllib3, certifi, chardet, idna, six, qrcode, addon.signals | Python modules in `assets/` | their own licences, inside each ZIP |
 | Inter Arabic, IBM Plex Sans Arabic, Noto, League Spartan fonts | subtitle and UI fonts | SIL OFL 1.1, licences inside the ZIPs |
 | Dex Hub add-on (`src/plugin.video.dexhub.tvos`) | the add-on | proprietary, source available; © DexWorld; see its `LICENSE.txt` and `THIRD-PARTY-NOTICES.txt` |

@@ -1,0 +1,7 @@
+1.1.0
+داخل تطبيق Dex Hub على Apple TV: المحرك مكتبة في التطبيق وخدمة هذي الإضافة تشغّله (النظام ما يسمح بتشغيل برنامج ثاني).
+Inside the Dex Hub Apple TV app the engine runs as a library of the app, started by this add-on's service (the system lets no app start a second program).
+
+1.0.0
+المحرك من طلب NuvioTV رقم 4426 (النسخة bc6decd4)، لماك arm64 ولينكس arm64.
+The engine from NuvioTV pull request 4426 (commit bc6decd4), for macOS arm64 and Linux arm64.

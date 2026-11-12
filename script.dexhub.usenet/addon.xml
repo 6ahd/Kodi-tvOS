@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.dexhub.usenet" name="Usenet engine (for Dex Hub)" version="1.1.0" provider-name="NuvioTV contributors; packaged for Dex Hub">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0" />
+  </requires>
+  <extension point="xbmc.python.script" library="default.py">
+    <provides>executable</provides>
+  </extension>
+  <extension point="xbmc.service" library="service.py" />
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_GB">Plays Usenet releases on this device</summary>
+    <summary lang="ar_SA">يشغّل نسخ Usenet على هذا الجهاز</summary>
+    <description lang="en_GB">The Usenet engine of NuvioTV, built unchanged as its own program: it reads a release from your own NNTP provider and serves it on this device (127.0.0.1) for Kodi to play. Dex Hub starts it when a Usenet source is picked; set your provider and indexers in Dex Hub, Settings, Stream sources, Usenet. Programs for macOS (Apple silicon) and 64-bit ARM Linux (CoreELEC, LibreELEC). Inside the Dex Hub Apple TV app the engine is a library of the app and this add-on starts it. Not for Android or stock Kodi on Apple devices, which do not let an add-on start a program.</description>
+    <description lang="ar_SA">محرك Usenet من مشروع NuvioTV، مبني كما هو كبرنامج مستقل: يقرأ النسخة من مزود NNTP حقك ويقدمها على هذا الجهاز (127.0.0.1) عشان كودي يشغلها. Dex Hub يشغله لما تختار مصدر Usenet؛ المزود والمفهرسات من Dex Hub ← الإعدادات ← مصادر التشغيل ← Usenet. فيه برنامج لماك (Apple silicon) ولينكس ARM 64-بت (CoreELEC و LibreELEC). داخل تطبيق Dex Hub على Apple TV المحرك مكتبة في التطبيق وهذي الإضافة تشغّله. ما يشتغل على أندرويد ولا كودي العادي على أجهزة أبل لأنها ما تسمح للإضافة تشغّل برنامج.</description>
+    <platform>all</platform>
+    <license>GPL-3.0-only</license>
+    <source>https://github.com/NuvioMedia/NuvioTV/pull/4426</source>
+    <news>1.1.0: inside the Dex Hub Apple TV app the engine runs as a library of the app, started by this add-on's service.
+1.0.0: the engine from NuvioTV pull request 4426 (commit bc6decd4), for macOS arm64 and Linux arm64.</news>
+    <assets>
+      <icon>icon.png</icon>
+    </assets>
+  </extension>
+</addon>

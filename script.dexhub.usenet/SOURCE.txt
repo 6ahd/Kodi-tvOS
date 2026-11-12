@@ -1,0 +1,53 @@
+Usenet engine (for Dex Hub), version 1.0.0
+
+What this is
+  bin/nuvio-usenet-darwin-arm64 and bin/nuvio-usenet-linux-arm64 are the Usenet engine of the
+  NuvioTV project, built without changes from:
+    repository  https://github.com/haaihond/NuvioTV   (pull request 4426 of
+                https://github.com/NuvioMedia/NuvioTV, branch full-nntp)
+    commit      bc6decd434c5718d4cb98e1ffddd9f1708bdd8b6
+    directory   native/usenet      program  ./cmd/nuvio-usenet
+  Licence: GNU General Public License, version 3 (LICENSE.txt). The licences of the libraries
+  built into the programs are in licenses/ (copied from native/usenet/licenses of that commit),
+  with the engine's own notice as licenses/NOTICE-engine.md.
+
+How the programs were built (11 November 2026, on macOS, Apple silicon)
+  Go 1.27.4, CGO on, in native/usenet of the commit above:
+    macOS arm64:
+      go build -trimpath -ldflags "-s -w" -o nuvio-usenet-darwin-arm64 ./cmd/nuvio-usenet
+    Linux arm64 (C compiler: zig 0.17.1, "zig cc -target aarch64-linux-gnu.2.28"):
+      CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=<zig cc wrapper> CXX=<zig c++ wrapper> \
+        go build -trimpath -ldflags "-s -w" -o nuvio-usenet-linux-arm64 ./cmd/nuvio-usenet
+  The yEnc decoder is linked from the static libraries that commit carries
+  (third_party/rapidyenc/librapidyenc_darwin.a and librapidyenc_linux_arm64.a).
+
+Source
+  The complete source of these programs is the commit above, which is public. Anyone who has
+  these programs may also ask the packager of this add-on for that source; it will be given on
+  the same terms (GPL-3.0).
+
+How it is used
+  The engine is a separate program. Dex Hub (a different add-on, under its own licence) starts
+  it as a child process and talks to it over HTTP on 127.0.0.1 only; nothing of the engine is
+  inside Dex Hub and nothing of Dex Hub is inside the engine.
+
+The engine as a library (1.1.0, Apple TV)
+  Where an app may not start a second program, the same engine is built as a library:
+  source/nuvio-usenet-lib/main.go of this add-on (GPL-3.0) placed in the commit above as
+  native/usenet/cmd/nuvio-usenet-lib/main.go. It is the same server as cmd/nuvio-usenet;
+  only the way in differs (three C calls instead of stdin and stdout). Nothing else in the
+  engine is changed.
+  Built 11 November 2026 on macOS (Apple silicon), Go 1.27.4, Xcode's tvOS 27.0 SDK:
+    C compiler: clang -target arm64-apple-tvos15.0 -isysroot <AppleTVOS SDK>
+    CGO_ENABLED=1 GOOS=ios GOARCH=arm64 CC=<that> CXX=<that> \
+      go build -trimpath -buildvcs=false -buildmode=c-archive -ldflags "-s -w" \
+        -o libnuviousenet.a ./cmd/nuvio-usenet-lib
+    yEnc decoder from third_party/rapidyenc-native of the commit:
+      cmake -DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_ARCHITECTURES=arm64 \
+        -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_BUILD_TYPE=Release \
+        -DDISABLE_SHARED=ON -DDISABLE_TOOL=ON -DDISABLE_CRC=ON ; target rapidyenc_static
+    linked into NuvioUsenet.framework/NuvioUsenet:
+      clang -target arm64-apple-tvos15.0 -dynamiclib -Wl,-all_load libnuviousenet.a \
+        librapidyenc.a -lc++ -lresolv -framework CoreFoundation -framework Security \
+        -install_name @rpath/NuvioUsenet.framework/NuvioUsenet
+  The framework ships inside the Dex Hub Apple TV app; service.py of this add-on loads it.

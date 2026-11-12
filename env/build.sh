@@ -91,6 +91,8 @@ ADDONS="$BUILD/addons"
 rm -rf "$ADDONS" && mkdir -p "$ADDONS"
 cp -R "$ENV_DIR"/addons/tvos/* "$ADDONS/"
 cp -R "$REPO/script.dexhub.tvos.players" "$ADDONS/"
+# the Usenet engine's add-on (GPL-3.0): its service loads vendor/NuvioUsenet.framework inside the app
+cp -R "$REPO/script.dexhub.usenet" "$ADDONS/"
 
 step "Package"
 VERSION="$("$PYTHON" -c 'import json,sys; print(json.load(open(sys.argv[1]))["app_version"])' "$REPO/ENGINE-RELEASE.json")"

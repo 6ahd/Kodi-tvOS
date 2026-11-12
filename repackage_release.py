@@ -51,6 +51,11 @@ with tempfile.TemporaryDirectory(dir=output) as temporary:
             shutil.copytree(framework, frameworks / framework.name, symlinks=True, dirs_exist_ok=True)
     shutil.copytree(repo / 'vendor/DexNavigationKit.framework', frameworks / 'DexNavigationKit.framework',
                     dirs_exist_ok=True)
+    # The Usenet engine as a library (NuvioTV's engine, GPL-3.0; see script.dexhub.usenet/SOURCE.txt).
+    # tvOS lets no app start a second program, so the engine add-on loads this instead.
+    usenet = repo / 'vendor/NuvioUsenet.framework'
+    if (usenet / 'NuvioUsenet').is_file():
+        shutil.copytree(usenet, frameworks / 'NuvioUsenet.framework', dirs_exist_ok=True)
     resources = products / 'AetherEngine_AetherEngine.bundle'
     if not (resources / 'silent-atmos.mp4').is_file():
         raise SystemExit('Aether resource bundle missing from the bridge build')
